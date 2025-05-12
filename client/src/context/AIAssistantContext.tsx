@@ -105,8 +105,8 @@ export function AIAssistantProvider({ children }: { children: ReactNode }) {
     balance: 249.50,
     transactions: [],
     paymentMethods: [
-      { id: "1", type: "visa", last4: "4242", expiryDate: "05/25", isDefault: true },
-      { id: "2", type: "mastercard", last4: "8790", expiryDate: "11/24", isDefault: false }
+      { id: 1, type: "visa", last4: "4242", expiryDate: "05/25", isDefault: true },
+      { id: 2, type: "mastercard", last4: "8790", expiryDate: "11/24", isDefault: false }
     ]
   });
   
