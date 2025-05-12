@@ -271,85 +271,90 @@ export class DatabaseStorage implements IStorage {
   
   // This method will initialize the database with default data
   async initDefaultData() {
-    // Check if we already have data
-    const [existingUser] = await db
-      .select()
-      .from(users)
-      .where(eq(users.username, "demo"));
-    
-    if (existingUser) {
-      return; // Data already exists
+    try {
+      // Check if we already have data
+      const [existingUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.username, "demo"));
+      
+      if (existingUser) {
+        return; // Data already exists
+      }
+      
+      // Create default user
+      const [user] = await db
+        .insert(users)
+        .values({
+          username: "demo",
+          password: "password",
+          preferences: {}
+        })
+        .returning();
+      
+      // Create wallet with initial balance
+      const [wallet] = await db
+        .insert(wallets)
+        .values({
+          userId: user.id,
+          balance: 249.5
+        })
+        .returning();
+      
+      // Add default payment methods
+      await db
+        .insert(paymentMethods)
+        .values({
+          userId: user.id,
+          type: "visa",
+          last4: "4242",
+          expiryDate: "05/25",
+          isDefault: true
+        });
+      
+      await db
+        .insert(paymentMethods)
+        .values({
+          userId: user.id,
+          type: "mastercard",
+          last4: "8790",
+          expiryDate: "11/24",
+          isDefault: false
+        });
+      
+      // Add initial transactions
+      await db
+        .insert(transactions)
+        .values([
+          {
+            userId: user.id,
+            amount: -21.98,
+            description: "Pizza Express",
+            type: "food",
+            date: new Date(Date.now() - 30 * 60000), // 30 minutes ago
+            metadata: {}
+          },
+          {
+            userId: user.id,
+            amount: -28.00,
+            description: "Movie Tickets",
+            type: "ticket",
+            date: new Date(Date.now() - 24 * 60 * 60000), // 1 day ago
+            metadata: {}
+          },
+          {
+            userId: user.id,
+            amount: 100.00,
+            description: "Added Funds",
+            type: "topup",
+            date: new Date(Date.now() - 5 * 24 * 60 * 60000), // 5 days ago
+            metadata: {}
+          }
+        ]);
+    } catch (error) {
+      console.error("Error initializing default data:", error);
+      throw error;
     }
-    
-    // Create default user
-    const [user] = await db
-      .insert(users)
-      .values({
-        username: "demo",
-        password: "password",
-        preferences: {}
-      })
-      .returning();
-    
-    // Create wallet with initial balance
-    const [wallet] = await db
-      .insert(wallets)
-      .values({
-        userId: user.id,
-        balance: 249.5
-      })
-      .returning();
-    
-    // Add default payment methods
-    await db
-      .insert(paymentMethods)
-      .values({
-        userId: user.id,
-        type: "visa",
-        last4: "4242",
-        expiryDate: "05/25",
-        isDefault: true
-      });
-    
-    await db
-      .insert(paymentMethods)
-      .values({
-        userId: user.id,
-        type: "mastercard",
-        last4: "8790",
-        expiryDate: "11/24",
-        isDefault: false
-      });
-    
-    // Add initial transactions
-    await db
-      .insert(transactions)
-      .values([
-        {
-          userId: user.id,
-          amount: -21.98,
-          description: "Pizza Express",
-          type: "food",
-          date: new Date(Date.now() - 30 * 60000), // 30 minutes ago
-          metadata: {}
-        },
-        {
-          userId: user.id,
-          amount: -28.00,
-          description: "Movie Tickets",
-          type: "ticket",
-          date: new Date(Date.now() - 24 * 60 * 60000), // 1 day ago
-          metadata: {}
-        },
-        {
-          userId: user.id,
-          amount: 100.00,
-          description: "Added Funds",
-          type: "topup",
-          date: new Date(Date.now() - 5 * 24 * 60 * 60000), // 5 days ago
-          metadata: {}
-        }
-      ]);
   }
 }
 
