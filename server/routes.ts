@@ -1,0 +1,648 @@
+import type { Express, Request, Response } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { z } from "zod";
+import { randomUUID } from "crypto";
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // API Routes prefix
+  const apiRouter = "/api";
+  
+  // ==== Assistant API ====
+  
+  // Process user message
+  app.post(`${apiRouter}/assistant/message`, async (req: Request, res: Response) => {
+    try {
+      const messageSchema = z.object({
+        message: z.string().min(1)
+      });
+      
+      const validated = messageSchema.parse(req.body);
+      
+      // Default user ID for the demo
+      const userId = 1;
+      
+      // Process the message (in a real app, this would use NLP/LLM)
+      const userInput = validated.message.toLowerCase();
+      let responseMessage = "I'm not sure how to help with that. You can ask me to order food, book tickets, or manage your wallet.";
+      let task = null;
+      let transaction = null;
+      
+      // Create food order task
+      if (userInput.includes("hungry") || userInput.includes("food") || userInput.includes("pizza") || 
+          userInput.includes("order") || userInput.includes("restaurant")) {
+        
+        responseMessage = "I can help you order a pepperoni pizza. Let me find some options nearby.";
+        
+        // Create a food order task
+        task = await storage.createTask({
+          userId,
+          type: "food",
+          status: "pending",
+          data: {
+            id: `food-${randomUUID()}`,
+            type: "food",
+            status: "pending",
+            restaurant: "Pizza Express",
+            items: [
+              {
+                name: "Pepperoni Pizza (Medium)",
+                quantity: 1,
+                price: 18.99
+              }
+            ],
+            deliveryFee: 2.99,
+            total: 21.98,
+            image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+            rating: 4.8,
+            deliveryTime: "25-35 min",
+            distance: "1.2 mi"
+          }
+        });
+      }
+      // Confirm order
+      else if (userInput.includes("confirm") && userInput.includes("order")) {
+        // Get the most recent pending food task
+        const tasks = await storage.getTasks(userId);
+        const pendingFoodTask = tasks.find(t => t.type === "food" && t.status === "pending");
+        
+        if (pendingFoodTask) {
+          // Update task status
+          const updatedTask = await storage.updateTaskStatus(pendingFoodTask.id, "confirmed");
+          
+          // Add order number to the task data
+          const taskData = updatedTask.data as any;
+          taskData.orderNumber = `PZ${Math.floor(10000 + Math.random() * 90000)}`;
+          
+          // Create transaction
+          transaction = await storage.createTransaction({
+            userId,
+            amount: -taskData.total,
+            description: taskData.restaurant,
+            type: "food"
+          });
+          
+          // Update user balance
+          await storage.updateUserBalance(userId, -taskData.total);
+          
+          responseMessage = `Great! I've placed your order for a pepperoni pizza from ${taskData.restaurant}. It should arrive in ${taskData.deliveryTime}.`;
+          task = updatedTask;
+        } else {
+          responseMessage = "I don't see any pending food orders to confirm.";
+        }
+      }
+      // Movie tickets
+      else if (userInput.includes("movie") || userInput.includes("ticket") || userInput.includes("cinema") || 
+               userInput.includes("film") || userInput.includes("show")) {
+        
+        responseMessage = "I'd be happy to book movie tickets for you tonight. Here are some movies playing nearby:";
+        
+        // Create a ticket booking task
+        task = await storage.createTask({
+          userId,
+          type: "ticket",
+          status: "select",
+          data: {
+            id: `ticket-${randomUUID()}`,
+            type: "ticket",
+            status: "select",
+            venue: "AMC Theaters",
+            options: {
+              movie: "Avengers: Endgame",
+              time: "8:00 PM",
+              tickets: 2
+            },
+            ticketPrice: 12.50,
+            serviceFee: 3.00,
+            total: 28.00,
+            image: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250"
+          }
+        });
+      }
+      // Wallet related
+      else if (userInput.includes("wallet") || userInput.includes("balance") || userInput.includes("money") ||
+               userInput.includes("payment") || userInput.includes("fund")) {
+        
+        const balance = await storage.getUserBalance(userId);
+        
+        responseMessage = `Your current wallet balance is $${balance.toFixed(2)}. You can add money to your wallet or view your transaction history.`;
+      }
+      
+      // Store the messages
+      await storage.createMessage({
+        userId,
+        content: validated.message,
+        type: "user"
+      });
+      
+      await storage.createMessage({
+        userId,
+        content: responseMessage,
+        type: "assistant"
+      });
+      
+      // Get user's wallet balance
+      const balance = await storage.getUserBalance(userId);
+      const transactions = await storage.getTransactions(userId);
+      
+      res.json({
+        message: responseMessage,
+        task: task ? task.data : null,
+        transaction,
+        wallet: {
+          balance,
+          transactions
+        }
+      });
+    } catch (error) {
+      console.error("Error processing message:", error);
+      res.status(500).json({ message: "Failed to process message" });
+    }
+  });
+  
+  // Process voice commands
+  app.post(`${apiRouter}/assistant/process`, async (req: Request, res: Response) => {
+    try {
+      const commandSchema = z.object({
+        command: z.string().min(1)
+      });
+      
+      const validated = commandSchema.parse(req.body);
+      
+      // Simple intent detection (in a real app, would use NLP/LLM)
+      const command = validated.command.toLowerCase();
+      let intent = "unknown";
+      let entities = {};
+      
+      if (command.includes("order") && (command.includes("food") || command.includes("pizza") || 
+                                        command.includes("burger") || command.includes("sushi"))) {
+        intent = "order_food";
+        
+        // Extract food type
+        const foodTypes = ["pizza", "burger", "sushi", "salad", "pasta"];
+        for (const type of foodTypes) {
+          if (command.includes(type)) {
+            entities = { foodType: type };
+            break;
+          }
+        }
+      }
+      else if (command.includes("book") && (command.includes("ticket") || command.includes("movie") || 
+                                           command.includes("show") || command.includes("cinema"))) {
+        intent = "book_ticket";
+        
+        // Extract movie name (simplified)
+        if (command.includes("avengers")) {
+          entities = { movie: "Avengers: Endgame" };
+        } else if (command.includes("dune")) {
+          entities = { movie: "Dune" };
+        } else {
+          entities = { movie: "Avengers: Endgame" }; // Default
+        }
+      }
+      else if (command.includes("wallet") || command.includes("balance") || command.includes("payment")) {
+        intent = "check_wallet";
+      }
+      
+      res.json({
+        message: "Voice command processed",
+        intent,
+        entities
+      });
+    } catch (error) {
+      console.error("Error processing voice command:", error);
+      res.status(500).json({ message: "Failed to process voice command" });
+    }
+  });
+  
+  // Generate food order options
+  app.post(`${apiRouter}/assistant/food-order`, async (req: Request, res: Response) => {
+    try {
+      const commandSchema = z.object({
+        command: z.string().min(1)
+      });
+      
+      const validated = commandSchema.parse(req.body);
+      const command = validated.command.toLowerCase();
+      
+      // Extract food type (simplified)
+      let foodType = "pizza";
+      const foodTypes = ["pizza", "burger", "sushi", "salad", "pasta"];
+      for (const type of foodTypes) {
+        if (command.includes(type)) {
+          foodType = type;
+          break;
+        }
+      }
+      
+      // Generate a food order task
+      const foodOrder = {
+        id: `food-${randomUUID()}`,
+        type: "food",
+        status: "pending",
+        restaurant: foodType === "pizza" ? "Pizza Express" : 
+                   foodType === "burger" ? "Burger Joint" :
+                   foodType === "sushi" ? "Sushi Palace" :
+                   "Food Place",
+        items: [
+          {
+            name: `${foodType.charAt(0).toUpperCase() + foodType.slice(1)}`,
+            quantity: 1,
+            price: 18.99
+          }
+        ],
+        deliveryFee: 2.99,
+        total: 21.98,
+        image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+        rating: 4.8,
+        deliveryTime: "25-35 min",
+        distance: "1.2 mi"
+      };
+      
+      res.json({
+        foodOrder,
+        message: `Here's a ${foodType} order from ${foodOrder.restaurant}`
+      });
+    } catch (error) {
+      console.error("Error generating food order:", error);
+      res.status(500).json({ message: "Failed to generate food order" });
+    }
+  });
+  
+  // Generate ticket booking options
+  app.post(`${apiRouter}/assistant/ticket-booking`, async (req: Request, res: Response) => {
+    try {
+      const commandSchema = z.object({
+        command: z.string().min(1)
+      });
+      
+      const validated = commandSchema.parse(req.body);
+      const command = validated.command.toLowerCase();
+      
+      // Extract movie name (simplified)
+      let movie = "Avengers: Endgame";
+      if (command.includes("dune")) {
+        movie = "Dune";
+      } else if (command.includes("bond") || command.includes("time to die")) {
+        movie = "No Time To Die";
+      }
+      
+      // Generate a ticket booking task
+      const ticketBooking = {
+        id: `ticket-${randomUUID()}`,
+        type: "ticket",
+        status: "select",
+        venue: "AMC Theaters",
+        options: {
+          movie,
+          time: "8:00 PM",
+          tickets: 2
+        },
+        ticketPrice: 12.50,
+        serviceFee: 3.00,
+        total: 28.00,
+        image: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250"
+      };
+      
+      res.json({
+        ticketBooking,
+        message: `Here are tickets for ${movie} at ${ticketBooking.venue}`
+      });
+    } catch (error) {
+      console.error("Error generating ticket booking:", error);
+      res.status(500).json({ message: "Failed to generate ticket booking" });
+    }
+  });
+  
+  // ==== Tasks API ====
+  
+  // Confirm a task with auto top-up support
+  app.post(`${apiRouter}/tasks/confirm`, async (req: Request, res: Response) => {
+    try {
+      const taskSchema = z.object({
+        taskId: z.number().or(z.string()),
+        autoTopUp: z.boolean().optional().default(false)
+      });
+      
+      const validated = taskSchema.parse(req.body);
+      const userId = 1; // Default user for demo
+      
+      // Find the task
+      const tasks = await storage.getTasks(userId);
+      let targetTask;
+      
+      if (typeof validated.taskId === 'number') {
+        targetTask = tasks.find(t => t.id === validated.taskId);
+      } else {
+        targetTask = tasks.find(t => (t.data as any).id === validated.taskId);
+      }
+      
+      if (!targetTask) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+      
+      // Get the task total amount
+      const taskTotal = (targetTask.data as any).total || 0;
+      
+      // Check if we have enough balance or need to auto top-up
+      const currentBalance = await storage.getUserBalance(userId);
+      let topUpTransaction = null;
+      
+      // Check if balance is insufficient and perform auto top-up if enabled
+      if (currentBalance < taskTotal) {
+        // Get user settings to check if auto top-up is enabled
+        const userSettings = await storage.getUser(userId);
+        const autoPaymentEnabled = (userSettings?.preferences as any)?.autoPayment === true || validated.autoTopUp;
+        
+        if (autoPaymentEnabled) {
+          // Calculate how much to top up (round up to nearest $50 increment above the required amount)
+          const requiredTopUp = taskTotal - currentBalance;
+          const topUpAmount = Math.ceil(requiredTopUp / 50) * 50;
+          
+          // Create a top-up transaction
+          topUpTransaction = await storage.createTransaction({
+            userId,
+            amount: topUpAmount,
+            description: "Auto Top-up",
+            type: "topup"
+          });
+          
+          // Update the balance
+          await storage.updateUserBalance(userId, topUpAmount);
+          
+          console.log(`Auto top-up for task ${targetTask.id}: $${topUpAmount}`);
+        } else {
+          // If auto top-up is not enabled, return error
+          return res.status(400).json({
+            message: "Insufficient funds. Enable auto top-up or add funds manually.",
+            success: false
+          });
+        }
+      }
+      
+      // Update task status
+      let newStatus = '';
+      let responseMessage = '';
+      
+      if (targetTask.type === 'food') {
+        newStatus = 'confirmed';
+        responseMessage = `Your food order from ${(targetTask.data as any).restaurant} has been confirmed and will be delivered in ${(targetTask.data as any).deliveryTime}.`;
+        
+        // Add order number
+        (targetTask.data as any).orderNumber = `PZ${Math.floor(10000 + Math.random() * 90000)}`;
+      } else if (targetTask.type === 'ticket') {
+        newStatus = 'confirmed';
+        responseMessage = `Your tickets for ${(targetTask.data as any).options.movie} at ${(targetTask.data as any).venue} have been booked for ${(targetTask.data as any).options.time}.`;
+      }
+      
+      const updatedTask = await storage.updateTaskStatus(targetTask.id, newStatus);
+      (updatedTask.data as any).status = newStatus;
+      
+      // Create payment transaction
+      const amount = -taskTotal;
+      const description = targetTask.type === 'food' 
+        ? (targetTask.data as any).restaurant 
+        : "Movie Tickets";
+      
+      const transaction = await storage.createTransaction({
+        userId,
+        amount,
+        description,
+        type: targetTask.type
+      });
+      
+      // Update user balance with payment
+      await storage.updateUserBalance(userId, amount);
+      
+      // Get updated wallet info
+      const balance = await storage.getUserBalance(userId);
+      const transactions = await storage.getTransactions(userId, 5);
+      
+      // Add auto top-up message if applicable
+      if (topUpTransaction) {
+        responseMessage = `Auto top-up applied: $${topUpTransaction.amount.toFixed(2)} added to your wallet. ${responseMessage}`;
+      }
+      
+      res.json({
+        message: responseMessage,
+        task: updatedTask.data,
+        transaction,
+        topUpTransaction,
+        autoTopUpApplied: topUpTransaction !== null,
+        success: true,
+        wallet: {
+          balance,
+          transactions
+        }
+      });
+    } catch (error) {
+      console.error("Error confirming task:", error);
+      res.status(500).json({ message: "Failed to confirm task" });
+    }
+  });
+  
+  // Cancel a task
+  app.post(`${apiRouter}/tasks/cancel`, async (req: Request, res: Response) => {
+    try {
+      const taskSchema = z.object({
+        taskId: z.number().or(z.string())
+      });
+      
+      const validated = taskSchema.parse(req.body);
+      const userId = 1; // Default user for demo
+      
+      // Find the task
+      const tasks = await storage.getTasks(userId);
+      let targetTask;
+      
+      if (typeof validated.taskId === 'number') {
+        targetTask = tasks.find(t => t.id === validated.taskId);
+      } else {
+        targetTask = tasks.find(t => (t.data as any).id === validated.taskId);
+      }
+      
+      if (!targetTask) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+      
+      // Update task status
+      const newStatus = 'cancelled';
+      (targetTask.data as any).status = newStatus;
+      
+      const updatedTask = await storage.updateTaskStatus(targetTask.id, newStatus);
+      
+      // Create response message
+      let responseMessage = '';
+      if (targetTask.type === 'food') {
+        responseMessage = `Your food order from ${(targetTask.data as any).restaurant} has been cancelled.`;
+      } else if (targetTask.type === 'ticket') {
+        responseMessage = `Your ticket booking for ${(targetTask.data as any).options.movie} has been cancelled.`;
+      }
+      
+      res.json({
+        message: responseMessage,
+        task: updatedTask.data
+      });
+    } catch (error) {
+      console.error("Error cancelling task:", error);
+      res.status(500).json({ message: "Failed to cancel task" });
+    }
+  });
+  
+  // ==== Wallet API ====
+  
+  // Update wallet balance
+  app.post(`${apiRouter}/wallet/update`, async (req: Request, res: Response) => {
+    try {
+      const updateSchema = z.object({
+        amount: z.number()
+      });
+      
+      const validated = updateSchema.parse(req.body);
+      const userId = 1; // Default user for demo
+      
+      // Update balance
+      const newBalance = await storage.updateUserBalance(userId, validated.amount);
+      
+      // If positive amount, create a top-up transaction
+      if (validated.amount > 0) {
+        await storage.createTransaction({
+          userId,
+          amount: validated.amount,
+          description: "Added Funds",
+          type: "topup"
+        });
+      }
+      
+      // Get latest transactions
+      const transactions = await storage.getTransactions(userId, 5);
+      
+      res.json({
+        balance: newBalance,
+        transactions
+      });
+    } catch (error) {
+      console.error("Error updating wallet:", error);
+      res.status(500).json({ message: "Failed to update wallet" });
+    }
+  });
+  
+  // Process payment with auto top-up feature
+  app.post(`${apiRouter}/wallet/process-payment`, async (req: Request, res: Response) => {
+    try {
+      const paymentSchema = z.object({
+        amount: z.number(),
+        description: z.string(),
+        autoTopUp: z.boolean().optional().default(false)
+      });
+      
+      const validated = paymentSchema.parse(req.body);
+      const userId = 1; // Default user for demo
+      
+      // Check sufficient balance
+      const currentBalance = await storage.getUserBalance(userId);
+      
+      // Handle auto top-up if balance is insufficient and auto top-up is enabled
+      let topUpTransaction = null;
+      
+      if (currentBalance < validated.amount && validated.autoTopUp) {
+        // Calculate how much to top up (round up to nearest $50 increment above the required amount)
+        const requiredTopUp = validated.amount - currentBalance;
+        const topUpAmount = Math.ceil(requiredTopUp / 50) * 50;
+        
+        // Add funds to wallet
+        topUpTransaction = await storage.createTransaction({
+          userId,
+          amount: topUpAmount,
+          description: "Auto Top-up",
+          type: "topup"
+        });
+        
+        // Update balance with topped-up amount
+        await storage.updateUserBalance(userId, topUpAmount);
+        
+        // Log the auto top-up
+        console.log(`Auto top-up for user ${userId}: $${topUpAmount.toFixed(2)}`);
+      } else if (currentBalance < validated.amount) {
+        // If auto top-up is disabled and balance is insufficient
+        return res.status(400).json({ 
+          message: "Insufficient funds. Enable auto top-up or add funds manually.",
+          success: false
+        });
+      }
+      
+      // Determine transaction type
+      let type = "payment";
+      if (validated.description.toLowerCase().includes("pizza") || 
+          validated.description.toLowerCase().includes("burger") ||
+          validated.description.toLowerCase().includes("restaurant")) {
+        type = "food";
+      } else if (validated.description.toLowerCase().includes("movie") || 
+                validated.description.toLowerCase().includes("ticket")) {
+        type = "ticket";
+      }
+      
+      // Create transaction (negative amount for payment)
+      const transaction = await storage.createTransaction({
+        userId,
+        amount: -Math.abs(validated.amount),
+        description: validated.description,
+        type
+      });
+      
+      // Update balance
+      const newBalance = await storage.updateUserBalance(userId, -Math.abs(validated.amount));
+      
+      // Get all transactions for response
+      const transactions = await storage.getTransactions(userId, 5);
+      
+      res.json({
+        success: true,
+        transaction,
+        topUpTransaction,
+        balance: newBalance,
+        transactions,
+        autoTopUpApplied: topUpTransaction !== null
+      });
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      res.status(500).json({ message: "Failed to process payment" });
+    }
+  });
+  
+  // Add funds to wallet
+  app.post(`${apiRouter}/wallet/add-funds`, async (req: Request, res: Response) => {
+    try {
+      const fundsSchema = z.object({
+        amount: z.number().positive()
+      });
+      
+      const validated = fundsSchema.parse(req.body);
+      const userId = 1; // Default user for demo
+      
+      // Create transaction
+      const transaction = await storage.createTransaction({
+        userId,
+        amount: validated.amount,
+        description: "Added Funds",
+        type: "topup"
+      });
+      
+      // Update balance
+      const newBalance = await storage.updateUserBalance(userId, validated.amount);
+      
+      res.json({
+        success: true,
+        transaction,
+        balance: newBalance
+      });
+    } catch (error) {
+      console.error("Error adding funds:", error);
+      res.status(500).json({ message: "Failed to add funds" });
+    }
+  });
+
+  const httpServer = createServer(app);
+
+  return httpServer;
+}

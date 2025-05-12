@@ -1,0 +1,115 @@
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, real } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+// User
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+  preferences: jsonb("preferences").default({}).notNull(),
+});
+
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
+});
+
+// Wallet
+export const wallets = pgTable("wallets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  balance: real("balance").notNull().default(0),
+});
+
+export const insertWalletSchema = createInsertSchema(wallets).pick({
+  userId: true,
+  balance: true,
+});
+
+// Transactions
+export const transactions = pgTable("transactions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  amount: real("amount").notNull(),
+  description: text("description").notNull(),
+  type: text("type").notNull(), // food, ticket, topup, etc.
+  date: timestamp("date").defaultNow().notNull(),
+  metadata: jsonb("metadata").default({}),
+});
+
+export const insertTransactionSchema = createInsertSchema(transactions).pick({
+  userId: true,
+  amount: true,
+  description: true,
+  type: true,
+});
+
+// Payment Methods
+export const paymentMethods = pgTable("payment_methods", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  type: text("type").notNull(), // visa, mastercard, etc.
+  last4: text("last4").notNull(),
+  expiryDate: text("expiry_date").notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
+});
+
+export const insertPaymentMethodSchema = createInsertSchema(paymentMethods).pick({
+  userId: true,
+  type: true,
+  last4: true,
+  expiryDate: true,
+  isDefault: true,
+});
+
+// Messages
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  content: text("content").notNull(),
+  type: text("type").notNull(), // user, assistant
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const insertMessageSchema = createInsertSchema(messages).pick({
+  userId: true,
+  content: true,
+  type: true,
+});
+
+// Tasks
+export const tasks = pgTable("tasks", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  type: text("type").notNull(), // food, ticket
+  status: text("status").notNull(), // pending, confirmed, cancelled, delivered
+  data: jsonb("data").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const insertTaskSchema = createInsertSchema(tasks).pick({
+  userId: true,
+  type: true,
+  status: true,
+  data: true,
+});
+
+// Types
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type Wallet = typeof wallets.$inferSelect;
+export type InsertWallet = z.infer<typeof insertWalletSchema>;
+
+export type Transaction = typeof transactions.$inferSelect;
+export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
+
+export type PaymentMethod = typeof paymentMethods.$inferSelect;
+export type InsertPaymentMethod = z.infer<typeof insertPaymentMethodSchema>;
+
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+export type Task = typeof tasks.$inferSelect;
+export type InsertTask = z.infer<typeof insertTaskSchema>;
