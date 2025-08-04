@@ -7,7 +7,7 @@ import SettingsPanel from "@/components/SettingsPanel";
 import { useAIAssistant } from "@/context/AIAssistantContext";
 
 const Home: React.FC = () => {
-  const { wallet, settings, updateSettings } = useAIAssistant();
+  const { wallet, s koettings, updateSettings } = useAIAssistant();
   const [isWalletOpen, setIsWalletOpen] = React.useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
   
