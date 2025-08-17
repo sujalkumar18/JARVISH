@@ -1,6 +1,6 @@
 # Overview
 
-Jarvish is an AI voice assistant application designed to help users perform quick tasks through natural voice commands. The app specializes in three main areas: ordering food, booking tickets, and managing digital wallet payments. Built as a full-stack web application, it features a React frontend with voice recognition capabilities and an Express backend with PostgreSQL database integration.
+Jarvish is an AI voice assistant application designed to help users perform quick tasks through natural voice commands. The app specializes in four main areas: ordering food, booking tickets, managing digital wallet payments, and fetching real-time news. Built as a full-stack web application, it features a React frontend with voice recognition capabilities and an Express backend with PostgreSQL database integration.
 
 The application provides a conversational interface where users can speak or type commands to interact with the AI assistant. Tasks are presented as interactive cards that users can confirm or cancel, with automatic payment processing through an integrated wallet system.
 
@@ -52,8 +52,9 @@ The application implements a comprehensive voice interaction system:
 
 - **Speech Recognition**: Browser-native speech-to-text with continuous listening and interim results
 - **Intent Processing**: Server-side command interpretation with structured response generation
-- **Task Generation**: Dynamic creation of food orders and ticket bookings based on voice commands
+- **Task Generation**: Dynamic creation of food orders, ticket bookings, and news displays based on voice commands
 - **Text-to-Speech**: Configurable voice synthesis with speed and voice selection options
+- **News Integration**: Real-time news fetching with category detection (technology, sports, business, health, science, entertainment)
 
 ## Payment System Architecture
 
@@ -80,6 +81,7 @@ The payment system is designed to reduce friction in the voice-first interface b
 ## Voice and AI
 - **Web Speech API**: Browser-native APIs for speech recognition and synthesis (no external service dependencies)
 - **TanStack Query**: Server state management and caching for API interactions
+- **News API**: Real-time news fetching using NewsAPI.org with the NEWS_API_KEY environment variable
 
 ## Development Tools
 - **Vite**: Build tool and development server with HMR capabilities

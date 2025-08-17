@@ -119,6 +119,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
       }
+      // News related
+      else if (userInput.includes("news") || userInput.includes("headlines") || userInput.includes("breaking") ||
+               userInput.includes("current events") || userInput.includes("today's news")) {
+        
+        try {
+          const NEWS_API_KEY = process.env.NEWS_API_KEY;
+          if (!NEWS_API_KEY) {
+            responseMessage = "I'd love to get you the latest news, but the news service isn't configured yet.";
+          } else {
+            // Determine category if specified
+            let category = 'general';
+            if (userInput.includes("sports")) category = 'sports';
+            else if (userInput.includes("tech") || userInput.includes("technology")) category = 'technology';
+            else if (userInput.includes("business")) category = 'business';
+            else if (userInput.includes("health")) category = 'health';
+            else if (userInput.includes("science")) category = 'science';
+            else if (userInput.includes("entertainment")) category = 'entertainment';
+            
+            const url = `https://newsapi.org/v2/top-headlines?country=us&category=${category}&pageSize=3&apiKey=${NEWS_API_KEY}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (response.ok && data.articles && data.articles.length > 0) {
+              const articles = data.articles
+                .filter((article: any) => article.title && article.description)
+                .slice(0, 3);
+              
+              if (articles.length > 0) {
+                responseMessage = `Here are the latest ${category === 'general' ? '' : category + ' '}headlines:`;
+                
+                // Create a news task to display the articles
+                task = await storage.createTask({
+                  userId,
+                  type: "news",
+                  status: "display",
+                  data: {
+                    id: `news-${randomUUID()}`,
+                    type: "news",
+                    status: "display",
+                    category,
+                    articles: articles.map((article: any) => ({
+                      title: article.title,
+                      description: article.description,
+                      url: article.url,
+                      urlToImage: article.urlToImage || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+                      publishedAt: article.publishedAt,
+                      source: article.source.name
+                    }))
+                  }
+                });
+              } else {
+                responseMessage = "I couldn't find any news articles right now. Please try again later.";
+              }
+            } else {
+              responseMessage = "I'm having trouble getting the latest news right now. Please try again later.";
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching news:", error);
+          responseMessage = "I'm having trouble getting the latest news right now. Please try again later.";
+        }
+      }
       // Wallet related
       else if (userInput.includes("wallet") || userInput.includes("balance") || userInput.includes("money") ||
                userInput.includes("payment") || userInput.includes("fund")) {
@@ -202,6 +264,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       else if (command.includes("wallet") || command.includes("balance") || command.includes("payment")) {
         intent = "check_wallet";
+      }
+      else if (command.includes("news") || command.includes("headlines") || command.includes("breaking")) {
+        intent = "get_news";
+        
+        // Extract news category
+        if (command.includes("sports")) {
+          entities = { category: "sports" };
+        } else if (command.includes("tech") || command.includes("technology")) {
+          entities = { category: "technology" };
+        } else if (command.includes("business")) {
+          entities = { category: "business" };
+        } else if (command.includes("health")) {
+          entities = { category: "health" };
+        } else if (command.includes("science")) {
+          entities = { category: "science" };
+        } else if (command.includes("entertainment")) {
+          entities = { category: "entertainment" };
+        } else {
+          entities = { category: "general" };
+        }
       }
       
       res.json({
@@ -314,6 +396,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ==== News API ====
+  
+  // Get latest news
+  app.get(`${apiRouter}/news`, async (req: Request, res: Response) => {
+    try {
+      const { category = 'general', country = 'us', pageSize = '5' } = req.query;
+      
+      const NEWS_API_KEY = process.env.NEWS_API_KEY;
+      if (!NEWS_API_KEY) {
+        return res.status(500).json({ message: "News API key not configured" });
+      }
+      
+      const url = `https://newsapi.org/v2/top-headlines?country=${country}&category=${category}&pageSize=${pageSize}&apiKey=${NEWS_API_KEY}`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch news');
+      }
+      
+      // Filter out articles with null content and format them
+      const articles = data.articles
+        .filter((article: any) => article.title && article.description && article.url)
+        .map((article: any) => ({
+          title: article.title,
+          description: article.description,
+          url: article.url,
+          urlToImage: article.urlToImage,
+          publishedAt: article.publishedAt,
+          source: article.source.name
+        }));
+      
+      res.json({
+        articles,
+        totalResults: data.totalResults,
+        status: 'success'
+      });
+    } catch (error) {
+      console.error("Error fetching news:", error);
+      res.status(500).json({ message: "Failed to fetch news" });
+    }
+  });
+  
+  // Search news by query
+  app.get(`${apiRouter}/news/search`, async (req: Request, res: Response) => {
+    try {
+      const { q, pageSize = '5', sortBy = 'publishedAt' } = req.query;
+      
+      if (!q) {
+        return res.status(400).json({ message: "Search query is required" });
+      }
+      
+      const NEWS_API_KEY = process.env.NEWS_API_KEY;
+      if (!NEWS_API_KEY) {
+        return res.status(500).json({ message: "News API key not configured" });
+      }
+      
+      const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(q as string)}&pageSize=${pageSize}&sortBy=${sortBy}&apiKey=${NEWS_API_KEY}`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to search news');
+      }
+      
+      // Filter out articles with null content and format them
+      const articles = data.articles
+        .filter((article: any) => article.title && article.description && article.url)
+        .map((article: any) => ({
+          title: article.title,
+          description: article.description,
+          url: article.url,
+          urlToImage: article.urlToImage,
+          publishedAt: article.publishedAt,
+          source: article.source.name
+        }));
+      
+      res.json({
+        articles,
+        totalResults: data.totalResults,
+        status: 'success'
+      });
+    } catch (error) {
+      console.error("Error searching news:", error);
+      res.status(500).json({ message: "Failed to search news" });
+    }
+  });
+
   // ==== Tasks API ====
   
   // Confirm a task with auto top-up support

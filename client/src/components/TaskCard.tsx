@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { useAIAssistant, FoodOrderTask, TicketTask } from "@/context/AIAssistantContext";
+import { useAIAssistant, FoodOrderTask, TicketTask, NewsTask } from "@/context/AIAssistantContext";
 import { Check, Utensils, Ticket, Clock, MapPin, Star, Zap, AlertCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import NewsCard from "./NewsCard";
 
 interface TaskCardProps {
-  task: FoodOrderTask | TicketTask;
+  task: FoodOrderTask | TicketTask | NewsTask;
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
@@ -392,6 +393,13 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
           )}
         </div>
       </div>
+    );
+  } else if (task.type === "news") {
+    return (
+      <NewsCard 
+        articles={task.articles}
+        category={task.category}
+      />
     );
   }
   

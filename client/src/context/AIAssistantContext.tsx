@@ -47,7 +47,22 @@ export interface TicketTask {
   image: string;
 }
 
-export type Task = FoodOrderTask | TicketTask;
+export interface NewsTask {
+  id: string;
+  type: "news";
+  status: "display";
+  category: string;
+  articles: {
+    title: string;
+    description: string;
+    url: string;
+    urlToImage?: string;
+    publishedAt: string;
+    source: string;
+  }[];
+}
+
+export type Task = FoodOrderTask | TicketTask | NewsTask;
 
 export interface WalletState {
   balance: number;
@@ -105,8 +120,8 @@ export function AIAssistantProvider({ children }: { children: ReactNode }) {
     balance: 249.50,
     transactions: [],
     paymentMethods: [
-      { id: 1, type: "visa", last4: "4242", expiryDate: "05/25", isDefault: true },
-      { id: 2, type: "mastercard", last4: "8790", expiryDate: "11/24", isDefault: false }
+      { id: 1, userId: 1, type: "visa", last4: "4242", expiryDate: "05/25", isDefault: true },
+      { id: 2, userId: 1, type: "mastercard", last4: "8790", expiryDate: "11/24", isDefault: false }
     ]
   });
   
@@ -208,8 +223,8 @@ export function AIAssistantProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      // Use the auto top-up feature if enabled
-      if (settings.autoPayment && wallet.balance < task.total) {
+      // Use the auto top-up feature if enabled (only for tasks with payment)
+      if ((task.type === 'food' || task.type === 'ticket') && settings.autoPayment && wallet.balance < task.total) {
         // Top-up notification
         addMessage(`Your wallet balance is insufficient. Auto top-up will be applied to complete this payment.`, "assistant");
       }
