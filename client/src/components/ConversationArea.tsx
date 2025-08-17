@@ -12,15 +12,20 @@ const ConversationArea: React.FC = () => {
     conversationEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
   
-  const getTasksForMessage = (messageId: string): Task[] => {
-    // Associate tasks with the message that triggered them
-    return tasks.filter(task => task.id.includes(messageId));
+  const getTasksForMessage = (messageIndex: number): Task[] => {
+    // Show tasks for recent assistant messages (simple approach: show latest tasks for recent messages)
+    const isRecentMessage = messageIndex >= Math.max(0, messages.length - 3);
+    if (isRecentMessage && tasks.length > 0) {
+      // Return the most recent task if this is one of the last few messages
+      return tasks.slice(-1);
+    }
+    return [];
   };
   
   return (
     <main className="flex-1 overflow-y-auto p-4 pb-24">
       <div className="space-y-6">
-        {messages.map((message) => (
+        {messages.map((message, index) => (
           <div key={message.id}>
             {message.type === "assistant" ? (
               <div className="flex items-start space-x-2">
@@ -33,7 +38,7 @@ const ConversationArea: React.FC = () => {
                   </div>
                   
                   {/* Render any tasks associated with this message */}
-                  {getTasksForMessage(message.id).map((task) => (
+                  {getTasksForMessage(index).map((task) => (
                     <TaskCard key={task.id} task={task} />
                   ))}
                 </div>

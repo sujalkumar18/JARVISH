@@ -28,100 +28,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let task = null;
       let transaction = null;
       
-      // Create food order task
-      if (userInput.includes("hungry") || userInput.includes("food") || userInput.includes("pizza") || 
-          userInput.includes("order") || userInput.includes("restaurant")) {
-        
-        responseMessage = "I can help you order a pepperoni pizza. Let me find some options nearby.";
-        
-        // Create a food order task
-        task = await storage.createTask({
-          userId,
-          type: "food",
-          status: "pending",
-          data: {
-            id: `food-${randomUUID()}`,
-            type: "food",
-            status: "pending",
-            restaurant: "Pizza Express",
-            items: [
-              {
-                name: "Pepperoni Pizza (Medium)",
-                quantity: 1,
-                price: 18.99
-              }
-            ],
-            deliveryFee: 2.99,
-            total: 21.98,
-            image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
-            rating: 4.8,
-            deliveryTime: "25-35 min",
-            distance: "1.2 mi"
-          }
-        });
-      }
-      // Confirm order
-      else if (userInput.includes("confirm") && userInput.includes("order")) {
-        // Get the most recent pending food task
-        const tasks = await storage.getTasks(userId);
-        const pendingFoodTask = tasks.find(t => t.type === "food" && t.status === "pending");
-        
-        if (pendingFoodTask) {
-          // Update task status
-          const updatedTask = await storage.updateTaskStatus(pendingFoodTask.id, "confirmed");
-          
-          // Add order number to the task data
-          const taskData = updatedTask.data as any;
-          taskData.orderNumber = `PZ${Math.floor(10000 + Math.random() * 90000)}`;
-          
-          // Create transaction
-          transaction = await storage.createTransaction({
-            userId,
-            amount: -taskData.total,
-            description: taskData.restaurant,
-            type: "food"
-          });
-          
-          // Update user balance
-          await storage.updateUserBalance(userId, -taskData.total);
-          
-          responseMessage = `Great! I've placed your order for a pepperoni pizza from ${taskData.restaurant}. It should arrive in ${taskData.deliveryTime}.`;
-          task = updatedTask;
-        } else {
-          responseMessage = "I don't see any pending food orders to confirm.";
-        }
-      }
-      // Movie tickets
-      else if (userInput.includes("movie") || userInput.includes("ticket") || userInput.includes("cinema") || 
-               userInput.includes("film") || userInput.includes("show")) {
-        
-        responseMessage = "I'd be happy to book movie tickets for you tonight. Here are some movies playing nearby:";
-        
-        // Create a ticket booking task
-        task = await storage.createTask({
-          userId,
-          type: "ticket",
-          status: "select",
-          data: {
-            id: `ticket-${randomUUID()}`,
-            type: "ticket",
-            status: "select",
-            venue: "AMC Theaters",
-            options: {
-              movie: "Avengers: Endgame",
-              time: "8:00 PM",
-              tickets: 2
-            },
-            ticketPrice: 12.50,
-            serviceFee: 3.00,
-            total: 28.00,
-            image: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250"
-          }
-        });
-      }
-      // News related
-      else if (userInput.includes("news") || userInput.includes("headlines") || userInput.includes("breaking") ||
-               userInput.includes("current events") || userInput.includes("today's news")) {
+      // News related (check this first to avoid conflicts)
+      if (userInput.includes("news") || userInput.includes("headlines") || userInput.includes("breaking") ||
+          userInput.includes("current events") || userInput.includes("today's news")) {
         
         try {
           const NEWS_API_KEY = process.env.NEWS_API_KEY;
@@ -180,6 +89,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("Error fetching news:", error);
           responseMessage = "I'm having trouble getting the latest news right now. Please try again later.";
         }
+      }
+      // Confirm order
+      else if (userInput.includes("confirm") && userInput.includes("order")) {
+        // Get the most recent pending food task
+        const tasks = await storage.getTasks(userId);
+        const pendingFoodTask = tasks.find(t => t.type === "food" && t.status === "pending");
+        
+        if (pendingFoodTask) {
+          // Update task status
+          const updatedTask = await storage.updateTaskStatus(pendingFoodTask.id, "confirmed");
+          
+          // Add order number to the task data
+          const taskData = updatedTask.data as any;
+          taskData.orderNumber = `PZ${Math.floor(10000 + Math.random() * 90000)}`;
+          
+          // Create transaction
+          transaction = await storage.createTransaction({
+            userId,
+            amount: -taskData.total,
+            description: taskData.restaurant,
+            type: "food"
+          });
+          
+          // Update user balance
+          await storage.updateUserBalance(userId, -taskData.total);
+          
+          responseMessage = `Great! I've placed your order for a pepperoni pizza from ${taskData.restaurant}. It should arrive in ${taskData.deliveryTime}.`;
+          task = updatedTask;
+        } else {
+          responseMessage = "I don't see any pending food orders to confirm.";
+        }
+      }
+      // Movie tickets (avoid conflicts with news requests)
+      else if ((userInput.includes("movie") || userInput.includes("ticket") || userInput.includes("cinema") || 
+               userInput.includes("film")) && !userInput.includes("news")) {
+        
+        responseMessage = "I'd be happy to book movie tickets for you tonight. Here are some movies playing nearby:";
+        
+        // Create a ticket booking task
+        task = await storage.createTask({
+          userId,
+          type: "ticket",
+          status: "select",
+          data: {
+            id: `ticket-${randomUUID()}`,
+            type: "ticket",
+            status: "select",
+            venue: "AMC Theaters",
+            options: {
+              movie: "Avengers: Endgame",
+              time: "8:00 PM",
+              tickets: 2
+            },
+            ticketPrice: 12.50,
+            serviceFee: 3.00,
+            total: 28.00,
+            image: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250"
+          }
+        });
+      }
+      // Create food order task
+      else if (userInput.includes("hungry") || userInput.includes("food") || userInput.includes("pizza") || 
+          userInput.includes("order") || userInput.includes("restaurant")) {
+        
+        responseMessage = "I can help you order a pepperoni pizza. Let me find some options nearby.";
+        
+        // Create a food order task
+        task = await storage.createTask({
+          userId,
+          type: "food",
+          status: "pending",
+          data: {
+            id: `food-${randomUUID()}`,
+            type: "food",
+            status: "pending",
+            restaurant: "Pizza Express",
+            items: [
+              {
+                name: "Pepperoni Pizza (Medium)",
+                quantity: 1,
+                price: 18.99
+              }
+            ],
+            deliveryFee: 2.99,
+            total: 21.98,
+            image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+            rating: 4.8,
+            deliveryTime: "25-35 min",
+            distance: "1.2 mi"
+          }
+        });
       }
       // Wallet related
       else if (userInput.includes("wallet") || userInput.includes("balance") || userInput.includes("money") ||
