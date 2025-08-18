@@ -426,9 +426,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // Extract location if mentioned
           let location = "New York"; // Default location
-          const locationMatch = userInput.match(/weather (?:in|at|for) ([^?]+)/i);
-          if (locationMatch) {
-            location = locationMatch[1].trim();
+          
+          // Try different patterns to extract location
+          const patterns = [
+            /weather (?:in|at|for) ([^?]+)/i,
+            /(?:what's|whats) (?:the )?weather (?:in|at|for) ([^?]+)/i,
+            /weather (?:of |for )([^?]+)/i,
+            /([a-zA-Z\s,]+)\s*weather/i
+          ];
+          
+          for (const pattern of patterns) {
+            const match = userInput.match(pattern);
+            if (match && match[1]) {
+              location = match[1].trim();
+              break;
+            }
+          }
+          
+          // Clean up location name
+          location = location.replace(/weather|what's|whats|the/gi, '').trim();
+          
+          // Handle common country names -> major cities
+          const countryToCity: Record<string, string> = {
+            'india': 'Delhi,IN',
+            'usa': 'New York,US',
+            'uk': 'London,UK',
+            'japan': 'Tokyo,JP',
+            'china': 'Beijing,CN',
+            'france': 'Paris,FR',
+            'germany': 'Berlin,DE',
+            'canada': 'Toronto,CA',
+            'australia': 'Sydney,AU'
+          };
+          
+          const lowercaseLocation = location.toLowerCase();
+          if (countryToCity[lowercaseLocation]) {
+            location = countryToCity[lowercaseLocation];
           }
           
           // Use free OpenWeatherMap API (requires API key)
