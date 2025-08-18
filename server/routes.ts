@@ -160,6 +160,174 @@ export async function registerRoutes(app: Express): Promise<Server> {
           responseMessage = "I'm having trouble accessing the dictionary right now. Please try again later.";
         }
       }
+      // Translation requests
+      else if (userInput.includes("translate") || userInput.includes("in hindi") || userInput.includes("in english") ||
+               userInput.includes("hindi mein") || userInput.includes("english mein")) {
+        
+        try {
+          let textToTranslate = "";
+          let targetLanguage = "";
+          let sourceLanguage = "auto";
+          
+          // Extract translation request patterns
+          if (userInput.includes("translate")) {
+            const translateMatch = userInput.match(/translate\s+(.+?)\s+(?:to|into)\s+(\w+)/);
+            if (translateMatch) {
+              textToTranslate = translateMatch[1].trim();
+              targetLanguage = translateMatch[2].toLowerCase();
+            }
+          } else if (userInput.includes("in hindi") || userInput.includes("hindi mein")) {
+            const hindiMatch = userInput.match(/(.+?)\s+(?:in hindi|hindi mein)/);
+            if (hindiMatch) {
+              textToTranslate = hindiMatch[1].trim();
+              targetLanguage = "hindi";
+            }
+          } else if (userInput.includes("in english") || userInput.includes("english mein")) {
+            const englishMatch = userInput.match(/(.+?)\s+(?:in english|english mein)/);
+            if (englishMatch) {
+              textToTranslate = englishMatch[1].trim();
+              targetLanguage = "english";
+            }
+          }
+          
+          // Map language names to codes
+          const languageCodes: { [key: string]: string } = {
+            "hindi": "hi",
+            "english": "en",
+            "spanish": "es",
+            "french": "fr",
+            "german": "de",
+            "chinese": "zh",
+            "japanese": "ja",
+            "korean": "ko",
+            "arabic": "ar",
+            "russian": "ru"
+          };
+          
+          const targetCode = languageCodes[targetLanguage];
+          
+          if (!textToTranslate || !targetCode) {
+            responseMessage = "Please tell me what you'd like to translate and to which language. For example: 'translate hello to Hindi' or 'beautiful in Hindi'";
+          } else {
+            // First get dictionary definition if it's a single word
+            let dictionaryData = null;
+            const wordCount = textToTranslate.split(/\s+/).length;
+            
+            if (wordCount === 1) {
+              try {
+                const dictResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${textToTranslate.toLowerCase()}`);
+                if (dictResponse.ok) {
+                  const dictData = await dictResponse.json();
+                  if (dictData && dictData.length > 0) {
+                    dictionaryData = dictData[0];
+                  }
+                }
+              } catch (dictError) {
+                console.log("Dictionary lookup failed, continuing with translation only");
+              }
+            }
+            
+            // Call MyMemory API (free, no auth required)
+            const translateResponse = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(textToTranslate)}&langpair=en|${targetCode}`);
+            
+            if (translateResponse.ok) {
+              const translateData = await translateResponse.json();
+              const translatedText = translateData.responseData.translatedText;
+              
+              const languageNames: { [key: string]: string } = {
+                "hi": "Hindi",
+                "en": "English",
+                "es": "Spanish",
+                "fr": "French",
+                "de": "German",
+                "zh": "Chinese",
+                "ja": "Japanese",
+                "ko": "Korean",
+                "ar": "Arabic",
+                "ru": "Russian"
+              };
+              
+              if (dictionaryData) {
+                // Create dictionary task with translation
+                responseMessage = `Here's "${textToTranslate}" with translation to ${languageNames[targetCode]}:`;
+                
+                // Also translate definitions if available
+                const translatedDefinitions = [];
+                if (dictionaryData.meanings && dictionaryData.meanings.length > 0) {
+                  for (const meaning of dictionaryData.meanings.slice(0, 2)) {
+                    for (const definition of meaning.definitions.slice(0, 2)) {
+                      try {
+                        const defTranslateResponse = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(definition.definition)}&langpair=en|${targetCode}`);
+                        
+                        if (defTranslateResponse.ok) {
+                          const defTranslateData = await defTranslateResponse.json();
+                          translatedDefinitions.push(defTranslateData.responseData.translatedText);
+                        }
+                      } catch (defError) {
+                        console.log("Definition translation failed for:", definition.definition);
+                      }
+                    }
+                  }
+                }
+                
+                task = await storage.createTask({
+                  userId,
+                  type: "dictionary",
+                  status: "display",
+                  data: {
+                    id: `dictionary-${randomUUID()}`,
+                    type: "dictionary",
+                    status: "display",
+                    word: dictionaryData.word,
+                    phonetic: dictionaryData.phonetic || dictionaryData.phonetics?.[0]?.text,
+                    meanings: dictionaryData.meanings?.slice(0, 2).map((meaning: any) => ({
+                      partOfSpeech: meaning.partOfSpeech,
+                      definitions: meaning.definitions?.slice(0, 2).map((def: any) => ({
+                        definition: def.definition,
+                        example: def.example,
+                        synonyms: def.synonyms?.slice(0, 3) || [],
+                        antonyms: def.antonyms?.slice(0, 3) || []
+                      })) || []
+                    })) || [],
+                    translations: [{
+                      language: targetCode,
+                      languageName: languageNames[targetCode],
+                      translatedWord: translatedText,
+                      translatedDefinitions: translatedDefinitions.slice(0, 3)
+                    }]
+                  }
+                });
+              } else {
+                // Simple translation without dictionary
+                responseMessage = `Translation: "${textToTranslate}" in ${languageNames[targetCode]} is "${translatedText}"`;
+                
+                task = await storage.createTask({
+                  userId,
+                  type: "dictionary",
+                  status: "display",
+                  data: {
+                    id: `dictionary-${randomUUID()}`,
+                    type: "dictionary",
+                    status: "display",
+                    word: textToTranslate,
+                    meanings: [],
+                    translations: [{
+                      language: targetCode,
+                      languageName: languageNames[targetCode],
+                      translatedWord: translatedText
+                    }]
+                  }
+                });
+              }
+            } else {
+              responseMessage = "I'm having trouble with the translation service right now. Please try again later.";
+            }
+          }
+        } catch (error) {
+          console.error("Error with translation:", error);
+          responseMessage = "I'm having trouble with the translation service right now. Please try again later.";
+        }
+      }
       // Confirm order
       else if (userInput.includes("confirm") && userInput.includes("order")) {
         // Get the most recent pending food task

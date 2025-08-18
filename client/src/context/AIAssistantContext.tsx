@@ -77,6 +77,12 @@ export interface DictionaryTask {
       antonyms?: string[];
     }[];
   }[];
+  translations?: {
+    language: string;
+    languageName: string;
+    translatedWord: string;
+    translatedDefinitions?: string[];
+  }[];
 }
 
 export type Task = FoodOrderTask | TicketTask | NewsTask | DictionaryTask;

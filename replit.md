@@ -1,6 +1,6 @@
 # Overview
 
-Jarvish is an AI voice assistant application designed to help users perform quick tasks through natural voice commands. The app specializes in four main areas: ordering food, booking tickets, managing digital wallet payments, and fetching real-time news. Built as a full-stack web application, it features a React frontend with voice recognition capabilities and an Express backend with PostgreSQL database integration.
+Jarvish is an AI voice assistant application designed to help users perform quick tasks through natural voice commands. The app specializes in five main areas: ordering food, booking tickets, managing digital wallet payments, fetching real-time news, and providing dictionary definitions with multi-language translation. Built as a full-stack web application, it features a React frontend with voice recognition capabilities and an Express backend with PostgreSQL database integration.
 
 The application provides a conversational interface where users can speak or type commands to interact with the AI assistant. Tasks are presented as interactive cards that users can confirm or cancel, with automatic payment processing through an integrated wallet system.
 
@@ -55,6 +55,7 @@ The application implements a comprehensive voice interaction system:
 - **Task Generation**: Dynamic creation of food orders, ticket bookings, and news displays based on voice commands
 - **Text-to-Speech**: Configurable voice synthesis with speed and voice selection options
 - **News Integration**: Real-time news fetching with category detection (technology, sports, business, health, science, entertainment)
+- **Dictionary & Translation**: Word definitions with phonetic pronunciation, examples, synonyms/antonyms, and multi-language translation support
 
 ## Payment System Architecture
 
@@ -82,6 +83,8 @@ The payment system is designed to reduce friction in the voice-first interface b
 - **Web Speech API**: Browser-native APIs for speech recognition and synthesis (no external service dependencies)
 - **TanStack Query**: Server state management and caching for API interactions
 - **News API**: Real-time news fetching using NewsAPI.org with the NEWS_API_KEY environment variable
+- **Dictionary API**: Free dictionary definitions using dictionaryapi.dev (no authentication required)
+- **Translation Service**: Multi-language translation using MyMemory API for English-Hindi and other language pairs
 
 ## Development Tools
 - **Vite**: Build tool and development server with HMR capabilities

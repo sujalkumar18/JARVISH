@@ -11,11 +11,11 @@ interface DictionaryCardProps {
 
 export function DictionaryCard({ task }: DictionaryCardProps) {
   const playPronunciation = () => {
-    if (task.phonetic) {
+    if (task.phonetic && typeof window !== 'undefined' && 'speechSynthesis' in window) {
       // Use speech synthesis to pronounce the word
       const utterance = new SpeechSynthesisUtterance(task.word);
       utterance.rate = 0.8; // Slightly slower for better clarity
-      speechSynthesis.speak(utterance);
+      window.speechSynthesis.speak(utterance);
     }
   };
 
@@ -53,7 +53,58 @@ export function DictionaryCard({ task }: DictionaryCardProps) {
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {task.meanings.map((meaning, meaningIndex) => (
+        {/* Translations Section */}
+        {task.translations && task.translations.length > 0 && (
+          <div className="space-y-4">
+            {task.translations.map((translation, transIndex) => (
+              <div key={transIndex} className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700">
+                    {translation.languageName} Translation
+                  </Badge>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-3">
+                    <p className="text-lg font-semibold text-green-800 dark:text-green-200" data-testid={`text-translation-${transIndex}`}>
+                      {translation.translatedWord}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-1 h-6 w-6"
+                      onClick={() => {
+                        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                          const utterance = new SpeechSynthesisUtterance(translation.translatedWord);
+                          utterance.lang = translation.language;
+                          utterance.rate = 0.8;
+                          window.speechSynthesis.speak(utterance);
+                        }
+                      }}
+                      data-testid={`button-pronounce-translation-${transIndex}`}
+                    >
+                      <Volume2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  
+                  {translation.translatedDefinitions && translation.translatedDefinitions.length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-green-700 dark:text-green-300">Translated Definitions:</p>
+                      {translation.translatedDefinitions.map((def, defIndex) => (
+                        <p key={defIndex} className="text-sm text-green-600 dark:text-green-400 pl-2 border-l border-green-300 dark:border-green-700" data-testid={`text-translated-definition-${transIndex}-${defIndex}`}>
+                          {def}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Dictionary Meanings Section */}
+        {task.meanings && task.meanings.length > 0 && task.meanings.map((meaning, meaningIndex) => (
           <div key={meaningIndex} className="space-y-3">
             <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700" data-testid={`badge-part-of-speech-${meaningIndex}`}>
               {meaning.partOfSpeech}
