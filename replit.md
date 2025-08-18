@@ -86,6 +86,14 @@ The payment system is designed to reduce friction in the voice-first interface b
 - **Dictionary API**: Free dictionary definitions using dictionaryapi.dev (no authentication required)
 - **Translation Service**: Multi-language translation using MyMemory API for English-Hindi and other language pairs
 
+## New API Integrations (Added August 18, 2025)
+- **Weather API**: OpenWeatherMap API for current weather conditions (requires WEATHER_API_KEY)
+- **Currency Exchange**: ExchangeRate-API for real-time currency conversion (no authentication required)
+- **Entertainment APIs**: 
+  - JokesAPI (v2.jokeapi.dev) for clean jokes (no authentication required)
+  - Quotable API for inspirational quotes (no authentication required)
+- **Wikipedia API**: Wikipedia REST API for article summaries and information (no authentication required)
+
 ## Development Tools
 - **Vite**: Build tool and development server with HMR capabilities
 - **TypeScript**: Static typing throughout the application
