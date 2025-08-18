@@ -85,7 +85,59 @@ export interface DictionaryTask {
   }[];
 }
 
-export type Task = FoodOrderTask | TicketTask | NewsTask | DictionaryTask;
+export interface WeatherTask {
+  id: string;
+  type: "weather";
+  status: "display";
+  location: string;
+  country?: string;
+  temperature: number;
+  feelsLike: number;
+  humidity: number;
+  pressure: number;
+  description: string;
+  main: string;
+  icon: string;
+  windSpeed: number;
+  visibility: string;
+}
+
+export interface CurrencyTask {
+  id: string;
+  type: "currency";
+  status: "display";
+  amount: number;
+  fromCurrency: string;
+  toCurrency: string;
+  exchangeRate: string;
+  convertedAmount: string;
+  lastUpdated: string;
+}
+
+export interface EntertainmentTask {
+  id: string;
+  type: "entertainment";
+  status: "display";
+  contentType: "joke" | "quote";
+  content: string;
+  author?: string;
+  category?: string;
+  tags?: string[];
+}
+
+export interface WikipediaTask {
+  id: string;
+  type: "wikipedia";
+  status: "display";
+  title: string;
+  extract: string;
+  thumbnail: string;
+  pageUrl?: string;
+  lang: string;
+  searchTerm: string;
+}
+
+export type Task = FoodOrderTask | TicketTask | NewsTask | DictionaryTask | WeatherTask | CurrencyTask | EntertainmentTask | WikipediaTask;
 
 export interface WalletState {
   balance: number;

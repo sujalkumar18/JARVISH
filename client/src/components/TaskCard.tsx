@@ -1,12 +1,16 @@
 import React, { useState } from "react";
-import { useAIAssistant, FoodOrderTask, TicketTask, NewsTask, DictionaryTask } from "@/context/AIAssistantContext";
+import { useAIAssistant, FoodOrderTask, TicketTask, NewsTask, DictionaryTask, WeatherTask, CurrencyTask, EntertainmentTask, WikipediaTask } from "@/context/AIAssistantContext";
 import { Check, Utensils, Ticket, Clock, MapPin, Star, Zap, AlertCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import NewsCard from "./NewsCard";
 import { DictionaryCard } from "./DictionaryCard";
+import { WeatherCard } from "./WeatherCard";
+import { CurrencyCard } from "./CurrencyCard";
+import { EntertainmentCard } from "./EntertainmentCard";
+import { WikipediaCard } from "./WikipediaCard";
 
 interface TaskCardProps {
-  task: FoodOrderTask | TicketTask | NewsTask | DictionaryTask;
+  task: FoodOrderTask | TicketTask | NewsTask | DictionaryTask | WeatherTask | CurrencyTask | EntertainmentTask | WikipediaTask;
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
@@ -405,6 +409,22 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   } else if (task.type === "dictionary") {
     return (
       <DictionaryCard task={task} />
+    );
+  } else if (task.type === "weather") {
+    return (
+      <WeatherCard data={task} />
+    );
+  } else if (task.type === "currency") {
+    return (
+      <CurrencyCard data={task} />
+    );
+  } else if (task.type === "entertainment") {
+    return (
+      <EntertainmentCard data={task} />
+    );
+  } else if (task.type === "wikipedia") {
+    return (
+      <WikipediaCard data={task} />
     );
   }
   

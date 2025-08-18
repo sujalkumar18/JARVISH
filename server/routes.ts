@@ -419,6 +419,244 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
       }
+      // Weather API
+      else if (userInput.includes("weather") || userInput.includes("temperature") || userInput.includes("forecast") ||
+               userInput.includes("climate") || userInput.includes("sunny") || userInput.includes("rainy")) {
+        
+        try {
+          // Extract location if mentioned
+          let location = "New York"; // Default location
+          const locationMatch = userInput.match(/weather (?:in|at|for) ([^?]+)/i);
+          if (locationMatch) {
+            location = locationMatch[1].trim();
+          }
+          
+          // Use free OpenWeatherMap API (requires API key)
+          const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
+          if (!WEATHER_API_KEY) {
+            responseMessage = "I'd love to get you weather information, but the weather service isn't configured yet. Please add your WEATHER_API_KEY to get current weather updates.";
+          } else {
+            const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&appid=${WEATHER_API_KEY}&units=metric`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (response.ok && data.main) {
+              responseMessage = `Current weather in ${data.name}:`;
+              
+              task = await storage.createTask({
+                userId,
+                type: "weather",
+                status: "display",
+                data: {
+                  id: `weather-${randomUUID()}`,
+                  type: "weather",
+                  status: "display",
+                  location: data.name,
+                  country: data.sys?.country,
+                  temperature: Math.round(data.main.temp),
+                  feelsLike: Math.round(data.main.feels_like),
+                  humidity: data.main.humidity,
+                  pressure: data.main.pressure,
+                  description: data.weather[0].description,
+                  main: data.weather[0].main,
+                  icon: `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`,
+                  windSpeed: data.wind?.speed || 0,
+                  visibility: data.visibility ? (data.visibility / 1000).toFixed(1) : 'N/A'
+                }
+              });
+            } else {
+              responseMessage = `I couldn't find weather information for "${location}". Please try a different city name.`;
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching weather:", error);
+          responseMessage = "I'm having trouble getting weather information right now. Please try again later.";
+        }
+      }
+      // Currency Exchange API
+      else if (userInput.includes("currency") || userInput.includes("exchange") || userInput.includes("convert") ||
+               userInput.includes("dollar") || userInput.includes("euro") || userInput.includes("pound")) {
+        
+        try {
+          // Extract currencies and amount
+          let amount = 1;
+          let fromCurrency = "USD";
+          let toCurrency = "EUR";
+          
+          const amountMatch = userInput.match(/(\d+(?:\.\d+)?)/);
+          if (amountMatch) {
+            amount = parseFloat(amountMatch[1]);
+          }
+          
+          // Extract currency codes
+          const currencyRegex = /(usd|eur|gbp|jpy|cad|aud|chf|cny|inr|krw|bitcoin|btc|ethereum|eth)/gi;
+          const currencies = userInput.match(currencyRegex) || [];
+          
+          if (currencies.length >= 2) {
+            fromCurrency = currencies[0]?.toUpperCase() || "USD";
+            toCurrency = currencies[1]?.toUpperCase() || "EUR";
+          } else if (currencies.length === 1) {
+            // If only one currency mentioned, assume converting from USD
+            toCurrency = currencies[0]?.toUpperCase() || "EUR";
+          }
+          
+          // Use free ExchangeRate-API (no key required)
+          const url = `https://api.exchangerate-api.com/v4/latest/${fromCurrency}`;
+          const response = await fetch(url);
+          const data = await response.json();
+          
+          if (response.ok && data.rates && data.rates[toCurrency]) {
+            const exchangeRate = data.rates[toCurrency];
+            const convertedAmount = (amount * exchangeRate).toFixed(2);
+            
+            responseMessage = `Currency conversion for ${amount} ${fromCurrency}:`;
+            
+            task = await storage.createTask({
+              userId,
+              type: "currency",
+              status: "display",
+              data: {
+                id: `currency-${randomUUID()}`,
+                type: "currency",
+                status: "display",
+                amount,
+                fromCurrency,
+                toCurrency,
+                exchangeRate: exchangeRate.toFixed(4),
+                convertedAmount,
+                lastUpdated: data.date || new Date().toISOString().split('T')[0]
+              }
+            });
+          } else {
+            responseMessage = `I couldn't get exchange rates for ${fromCurrency} to ${toCurrency}. Please try different currency codes.`;
+          }
+        } catch (error) {
+          console.error("Error fetching currency data:", error);
+          responseMessage = "I'm having trouble getting currency exchange rates right now. Please try again later.";
+        }
+      }
+      // Jokes and Quotes API
+      else if (userInput.includes("joke") || userInput.includes("funny") || userInput.includes("laugh") ||
+               userInput.includes("quote") || userInput.includes("inspiration") || userInput.includes("motivate")) {
+        
+        try {
+          const isJoke = userInput.includes("joke") || userInput.includes("funny") || userInput.includes("laugh");
+          
+          if (isJoke) {
+            // Use free JokesAPI
+            const response = await fetch("https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single");
+            const data = await response.json();
+            
+            if (response.ok && data.joke) {
+              responseMessage = "Here's a joke to brighten your day:";
+              
+              task = await storage.createTask({
+                userId,
+                type: "entertainment",
+                status: "display",
+                data: {
+                  id: `entertainment-${randomUUID()}`,
+                  type: "entertainment",
+                  status: "display",
+                  contentType: "joke",
+                  content: data.joke,
+                  category: data.category || "General"
+                }
+              });
+            } else {
+              responseMessage = "I couldn't fetch a joke right now. Here's one for you: Why don't scientists trust atoms? Because they make up everything!";
+            }
+          } else {
+            // Use free quotes API
+            const response = await fetch("https://api.quotable.io/random?minLength=50&maxLength=200");
+            const data = await response.json();
+            
+            if (response.ok && data.content) {
+              responseMessage = "Here's an inspirational quote for you:";
+              
+              task = await storage.createTask({
+                userId,
+                type: "entertainment",
+                status: "display",
+                data: {
+                  id: `entertainment-${randomUUID()}`,
+                  type: "entertainment",
+                  status: "display",
+                  contentType: "quote",
+                  content: data.content,
+                  author: data.author,
+                  tags: data.tags || []
+                }
+              });
+            } else {
+              responseMessage = "I couldn't fetch a quote right now. Here's one for you: 'The only way to do great work is to love what you do.' - Steve Jobs";
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching entertainment content:", error);
+          responseMessage = "I'm having trouble getting entertainment content right now. Please try again later.";
+        }
+      }
+      // Wikipedia API
+      else if (userInput.includes("wikipedia") || userInput.includes("wiki") || userInput.includes("tell me about") ||
+               userInput.includes("information about") || userInput.includes("facts about") || userInput.includes("who is") ||
+               userInput.includes("what is") && !userInput.includes("define")) {
+        
+        try {
+          // Extract search term
+          let searchTerm = "";
+          
+          if (userInput.includes("tell me about ")) {
+            searchTerm = userInput.split("tell me about ")[1]?.trim();
+          } else if (userInput.includes("information about ")) {
+            searchTerm = userInput.split("information about ")[1]?.trim();
+          } else if (userInput.includes("facts about ")) {
+            searchTerm = userInput.split("facts about ")[1]?.trim();
+          } else if (userInput.includes("who is ")) {
+            searchTerm = userInput.split("who is ")[1]?.trim();
+          } else if (userInput.includes("what is ")) {
+            searchTerm = userInput.split("what is ")[1]?.trim();
+          } else if (userInput.includes("wikipedia ") || userInput.includes("wiki ")) {
+            const match = userInput.match(/(?:wikipedia|wiki)\s+(.+)/i);
+            if (match) searchTerm = match[1].trim();
+          }
+          
+          if (!searchTerm) {
+            responseMessage = "Please tell me what you'd like to know about. For example: 'tell me about Albert Einstein' or 'what is artificial intelligence?'";
+          } else {
+            // Use Wikipedia API
+            const searchUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchTerm)}`;
+            const response = await fetch(searchUrl);
+            const data = await response.json();
+            
+            if (response.ok && data.extract) {
+              responseMessage = `Here's information about ${data.title}:`;
+              
+              task = await storage.createTask({
+                userId,
+                type: "wikipedia",
+                status: "display",
+                data: {
+                  id: `wikipedia-${randomUUID()}`,
+                  type: "wikipedia",
+                  status: "display",
+                  title: data.title,
+                  extract: data.extract,
+                  thumbnail: data.thumbnail?.source || "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+                  pageUrl: data.content_urls?.desktop?.page,
+                  lang: data.lang || "en",
+                  searchTerm
+                }
+              });
+            } else {
+              responseMessage = `I couldn't find information about "${searchTerm}" on Wikipedia. Please try a different search term or check the spelling.`;
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching Wikipedia data:", error);
+          responseMessage = "I'm having trouble accessing Wikipedia right now. Please try again later.";
+        }
+      }
       // Wallet related
       else if (userInput.includes("wallet") || userInput.includes("balance") || userInput.includes("money") ||
                userInput.includes("payment") || userInput.includes("fund")) {
