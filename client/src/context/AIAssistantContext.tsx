@@ -62,7 +62,24 @@ export interface NewsTask {
   }[];
 }
 
-export type Task = FoodOrderTask | TicketTask | NewsTask;
+export interface DictionaryTask {
+  id: string;
+  type: "dictionary";
+  status: "display";
+  word: string;
+  phonetic?: string;
+  meanings: {
+    partOfSpeech: string;
+    definitions: {
+      definition: string;
+      example?: string;
+      synonyms?: string[];
+      antonyms?: string[];
+    }[];
+  }[];
+}
+
+export type Task = FoodOrderTask | TicketTask | NewsTask | DictionaryTask;
 
 export interface WalletState {
   balance: number;

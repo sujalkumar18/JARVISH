@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { useAIAssistant, FoodOrderTask, TicketTask, NewsTask } from "@/context/AIAssistantContext";
+import { useAIAssistant, FoodOrderTask, TicketTask, NewsTask, DictionaryTask } from "@/context/AIAssistantContext";
 import { Check, Utensils, Ticket, Clock, MapPin, Star, Zap, AlertCircle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import NewsCard from "./NewsCard";
+import { DictionaryCard } from "./DictionaryCard";
 
 interface TaskCardProps {
-  task: FoodOrderTask | TicketTask | NewsTask;
+  task: FoodOrderTask | TicketTask | NewsTask | DictionaryTask;
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
@@ -400,6 +401,10 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
         articles={task.articles}
         category={task.category}
       />
+    );
+  } else if (task.type === "dictionary") {
+    return (
+      <DictionaryCard task={task} />
     );
   }
   

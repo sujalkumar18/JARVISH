@@ -90,6 +90,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
           responseMessage = "I'm having trouble getting the latest news right now. Please try again later.";
         }
       }
+      // Dictionary lookup
+      else if (userInput.includes("define") || userInput.includes("definition") || userInput.includes("meaning") ||
+               userInput.includes("dictionary") || userInput.includes("what does") || userInput.includes("what is")) {
+        
+        try {
+          // Extract the word to define
+          let word = "";
+          
+          // Try different patterns to extract the word
+          if (userInput.includes("define ")) {
+            word = userInput.split("define ")[1]?.split(" ")[0];
+          } else if (userInput.includes("definition of ")) {
+            word = userInput.split("definition of ")[1]?.split(" ")[0];
+          } else if (userInput.includes("meaning of ")) {
+            word = userInput.split("meaning of ")[1]?.split(" ")[0];
+          } else if (userInput.includes("what does ")) {
+            const match = userInput.match(/what does (\w+) mean/);
+            word = match ? match[1] : "";
+          } else if (userInput.includes("what is ")) {
+            const match = userInput.match(/what is (\w+)/);
+            word = match ? match[1] : "";
+          }
+          
+          if (!word) {
+            responseMessage = "Please tell me which word you'd like me to define. For example: 'define happiness' or 'what does beautiful mean?'";
+          } else {
+            // Call the free dictionary API
+            const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`);
+            
+            if (response.ok) {
+              const data = await response.json();
+              
+              if (data && data.length > 0) {
+                const entry = data[0];
+                responseMessage = `Here's the definition of "${word}":`;
+                
+                // Create a dictionary task to display the word information
+                task = await storage.createTask({
+                  userId,
+                  type: "dictionary",
+                  status: "display",
+                  data: {
+                    id: `dictionary-${randomUUID()}`,
+                    type: "dictionary",
+                    status: "display",
+                    word: entry.word,
+                    phonetic: entry.phonetic || entry.phonetics?.[0]?.text,
+                    meanings: entry.meanings?.map((meaning: any) => ({
+                      partOfSpeech: meaning.partOfSpeech,
+                      definitions: meaning.definitions?.slice(0, 3).map((def: any) => ({
+                        definition: def.definition,
+                        example: def.example,
+                        synonyms: def.synonyms?.slice(0, 5) || [],
+                        antonyms: def.antonyms?.slice(0, 5) || []
+                      })) || []
+                    })) || []
+                  }
+                });
+              } else {
+                responseMessage = `I couldn't find a definition for "${word}". Please check the spelling and try again.`;
+              }
+            } else {
+              responseMessage = `I couldn't find a definition for "${word}". Please check the spelling and try again.`;
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching dictionary definition:", error);
+          responseMessage = "I'm having trouble accessing the dictionary right now. Please try again later.";
+        }
+      }
       // Confirm order
       else if (userInput.includes("confirm") && userInput.includes("order")) {
         // Get the most recent pending food task
