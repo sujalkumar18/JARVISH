@@ -3,10 +3,166 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { randomUUID } from "crypto";
+import bcrypt from "bcrypt";
+import session from "express-session";
+import { signupSchema, loginSchema } from "@shared/schema";
+
+// Extend Express Request interface for session
+declare module "express-session" {
+  interface SessionData {
+    userId?: number;
+    user?: { id: number; username: string; email: string };
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Configure session middleware
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+  }));
+
   // API Routes prefix
   const apiRouter = "/api";
+
+  // Authentication middleware
+  const requireAuth = (req: Request, res: Response, next: Function) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    next();
+  };
+
+  // Get current user info
+  const getCurrentUserId = (req: Request): number => {
+    return req.session.userId || 1; // Fallback for demo purposes
+  };
+
+  // ==== Authentication Routes ====
+  
+  // Sign up
+  app.post(`${apiRouter}/auth/signup`, async (req: Request, res: Response) => {
+    try {
+      const validated = signupSchema.parse(req.body);
+      
+      // Check if user already exists
+      const existingUserByEmail = await storage.getUserByEmail(validated.email);
+      if (existingUserByEmail) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+      
+      const existingUserByUsername = await storage.getUserByUsername(validated.username);
+      if (existingUserByUsername) {
+        return res.status(400).json({ message: "Username already taken" });
+      }
+      
+      // Hash password
+      const hashedPassword = await bcrypt.hash(validated.password, 12);
+      
+      // Create user
+      const user = await storage.createUser({
+        username: validated.username,
+        email: validated.email,
+        password: hashedPassword
+      });
+      
+      // Set session
+      req.session.userId = user.id;
+      req.session.user = {
+        id: user.id,
+        username: user.username,
+        email: user.email
+      };
+      
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email
+        }
+      });
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      if (error.errors) {
+        return res.status(400).json({ 
+          message: "Validation failed",
+          errors: error.errors
+        });
+      }
+      res.status(500).json({ message: "Registration failed" });
+    }
+  });
+  
+  // Sign in
+  app.post(`${apiRouter}/auth/signin`, async (req: Request, res: Response) => {
+    try {
+      const validated = loginSchema.parse(req.body);
+      
+      // Find user
+      const user = await storage.getUserByEmail(validated.email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      
+      // Check password
+      const isValidPassword = await bcrypt.compare(validated.password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      
+      // Set session
+      req.session.userId = user.id;
+      req.session.user = {
+        id: user.id,
+        username: user.username,
+        email: user.email
+      };
+      
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email
+        }
+      });
+    } catch (error: any) {
+      console.error("Signin error:", error);
+      if (error.errors) {
+        return res.status(400).json({ 
+          message: "Validation failed",
+          errors: error.errors
+        });
+      }
+      res.status(500).json({ message: "Sign in failed" });
+    }
+  });
+  
+  // Sign out
+  app.post(`${apiRouter}/auth/signout`, (req: Request, res: Response) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Could not sign out" });
+      }
+      res.clearCookie('connect.sid');
+      res.json({ success: true, message: "Signed out successfully" });
+    });
+  });
+  
+  // Get current user
+  app.get(`${apiRouter}/auth/me`, (req: Request, res: Response) => {
+    if (req.session.user) {
+      res.json({ user: req.session.user });
+    } else {
+      res.status(401).json({ message: "Not authenticated" });
+    }
+  });
   
   // ==== Assistant API ====
   
@@ -19,8 +175,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const validated = messageSchema.parse(req.body);
       
-      // Default user ID for the demo
-      const userId = 1;
+      // Get authenticated user ID
+      const userId = getCurrentUserId(req);
       
       // Process the message (in a real app, this would use NLP/LLM)
       const userInput = validated.message.toLowerCase();
@@ -740,6 +896,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const validated = commandSchema.parse(req.body);
       
+      // Get authenticated user ID
+      const userId = getCurrentUserId(req);
+      
       // Simple intent detection (in a real app, would use NLP/LLM)
       const command = validated.command.toLowerCase();
       let intent = "unknown";
@@ -1006,7 +1165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const validated = taskSchema.parse(req.body);
-      const userId = 1; // Default user for demo
+      const userId = getCurrentUserId(req);
       
       // Find the task
       const tasks = await storage.getTasks(userId);
@@ -1130,7 +1289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const validated = taskSchema.parse(req.body);
-      const userId = 1; // Default user for demo
+      const userId = getCurrentUserId(req);
       
       // Find the task
       const tasks = await storage.getTasks(userId);
@@ -1180,7 +1339,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const validated = updateSchema.parse(req.body);
-      const userId = 1; // Default user for demo
+      const userId = getCurrentUserId(req);
       
       // Update balance
       const newBalance = await storage.updateUserBalance(userId, validated.amount);
@@ -1218,7 +1377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const validated = paymentSchema.parse(req.body);
-      const userId = 1; // Default user for demo
+      const userId = getCurrentUserId(req);
       
       // Check sufficient balance
       const currentBalance = await storage.getUserBalance(userId);
@@ -1299,7 +1458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const validated = fundsSchema.parse(req.body);
-      const userId = 1; // Default user for demo
+      const userId = getCurrentUserId(req);
       
       // Create transaction
       const transaction = await storage.createTransaction({

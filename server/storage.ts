@@ -14,6 +14,7 @@ export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
   // Wallet methods
@@ -52,6 +53,11 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
   }
 
@@ -513,7 +519,11 @@ export class MemStorage implements IStorage {
   
   async createPaymentMethod(paymentMethod: InsertPaymentMethod): Promise<PaymentMethod> {
     const id = this.currentId.paymentMethods++;
-    const newPaymentMethod: PaymentMethod = { ...paymentMethod, id };
+    const newPaymentMethod: PaymentMethod = { 
+      ...paymentMethod, 
+      id,
+      isDefault: paymentMethod.isDefault ?? false
+    };
     
     const userMethods = this.paymentMethods.get(paymentMethod.userId) || [];
     
@@ -530,11 +540,11 @@ export class MemStorage implements IStorage {
   async setDefaultPaymentMethod(id: number): Promise<PaymentMethod> {
     let targetMethod: PaymentMethod | undefined;
     
-    for (const [userId, methods] of this.paymentMethods.entries()) {
+    for (const [userId, methods] of Array.from(this.paymentMethods.entries())) {
       for (const method of methods) {
         if (method.id === id) {
           targetMethod = method;
-          methods.forEach(m => m.isDefault = m.id === id);
+          methods.forEach((m: PaymentMethod) => m.isDefault = m.id === id);
           this.paymentMethods.set(userId, methods);
           break;
         }
