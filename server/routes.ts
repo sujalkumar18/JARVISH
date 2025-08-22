@@ -56,17 +56,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email already registered" });
       }
       
-      const existingUserByUsername = await storage.getUserByUsername(validated.username);
-      if (existingUserByUsername) {
-        return res.status(400).json({ message: "Username already taken" });
-      }
-      
       // Hash password
       const hashedPassword = await bcrypt.hash(validated.password, 12);
       
       // Create user
       const user = await storage.createUser({
-        username: validated.username,
+        firstName: validated.firstName,
+        lastName: validated.lastName,
         email: validated.email,
         password: hashedPassword
       });
@@ -75,7 +71,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       req.session.user = {
         id: user.id,
-        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email
       };
       
@@ -83,7 +80,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         user: {
           id: user.id,
-          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
           email: user.email
         }
       });
@@ -120,7 +118,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       req.session.user = {
         id: user.id,
-        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email
       };
       
@@ -128,7 +127,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         user: {
           id: user.id,
-          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
           email: user.email
         }
       });

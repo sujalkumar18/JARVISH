@@ -6,7 +6,8 @@ import { relations } from "drizzle-orm";
 // User
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   preferences: jsonb("preferences").default({}).notNull(),
@@ -14,7 +15,8 @@ export const users = pgTable("users", {
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
+  firstName: true,
+  lastName: true,
   email: true,
   password: true,
 });
@@ -25,7 +27,8 @@ export const loginSchema = z.object({
 });
 
 export const signupSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
+  firstName: z.string().min(2, "First name must be at least 2 characters"),
+  lastName: z.string().min(2, "Last name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });

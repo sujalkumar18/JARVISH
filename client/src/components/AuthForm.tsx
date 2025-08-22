@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "./ui/alert";
 import { Mail, Lock, User } from "lucide-react";
 
 interface AuthFormProps {
-  onAuth: (user: { id: number; username: string; email: string }) => void;
+  onAuth: (user: { id: number; firstName: string; lastName: string; email: string }) => void;
 }
 
 export function AuthForm({ onAuth }: AuthFormProps) {
@@ -22,7 +22,8 @@ export function AuthForm({ onAuth }: AuthFormProps) {
   });
 
   const [signUpData, setSignUpData] = useState({
-    username: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: ""
   });
@@ -161,19 +162,36 @@ export function AuthForm({ onAuth }: AuthFormProps) {
 
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-username" className="text-white">Username</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                    <Input
-                      id="signup-username"
-                      type="text"
-                      placeholder="Choose a username"
-                      value={signUpData.username}
-                      onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })}
-                      className="pl-10 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus:border-slate-500"
-                      required
-                    />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-firstname" className="text-white">First Name</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="signup-firstname"
+                        type="text"
+                        placeholder="First name"
+                        value={signUpData.firstName}
+                        onChange={(e) => setSignUpData({ ...signUpData, firstName: e.target.value })}
+                        className="pl-10 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus:border-slate-500"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-lastname" className="text-white">Last Name</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="signup-lastname"
+                        type="text"
+                        placeholder="Last name"
+                        value={signUpData.lastName}
+                        onChange={(e) => setSignUpData({ ...signUpData, lastName: e.target.value })}
+                        className="pl-10 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus:border-slate-500"
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-2">

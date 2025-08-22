@@ -13,7 +13,7 @@ import { eq, and, desc } from "drizzle-orm";
 export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByName(firstName: string, lastName: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
@@ -51,8 +51,8 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+  async getUserByName(firstName: string, lastName: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(and(eq(users.firstName, firstName), eq(users.lastName, lastName)));
     return user;
   }
 
@@ -395,9 +395,12 @@ export class MemStorage implements IStorage {
   private initDefaultData() {
     const user: User = {
       id: 1,
-      username: "demo",
+      firstName: "Demo",
+      lastName: "User",
+      email: "demo@example.com",
       password: "password",
-      preferences: {}
+      preferences: {},
+      createdAt: new Date()
     };
     this.users.set(user.id, user);
     this.balances.set(user.id, 249.5);
@@ -462,16 +465,31 @@ export class MemStorage implements IStorage {
     return this.users.get(id);
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
+  async getUserByName(firstName: string, lastName: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(
-      (user) => user.username === username
+      (user) => user.firstName === firstName && user.lastName === lastName
+    );
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.email === email
     );
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentId.users++;
-    const user: User = { ...insertUser, id, preferences: {} };
+    const user: User = { 
+      ...insertUser, 
+      id, 
+      preferences: {},
+      createdAt: new Date()
+    };
     this.users.set(id, user);
+    
+    // Create wallet for new user
+    this.balances.set(id, 0);
+    
     return user;
   }
   
@@ -607,5 +625,5 @@ export class MemStorage implements IStorage {
   }
 }
 
-// Use MemStorage for demo
+// Use MemStorage for demo (works without database setup)
 export const storage = new MemStorage();
