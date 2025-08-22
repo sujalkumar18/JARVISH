@@ -293,7 +293,7 @@ export class DatabaseStorage implements IStorage {
         .insert(users)
         .values({
           username: "demo",
-          password: "password",
+          password: "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewgTdvLNs.xKzXdq", // hashed "password123"
           preferences: {}
         })
         .returning();
@@ -398,7 +398,7 @@ export class MemStorage implements IStorage {
       firstName: "Demo",
       lastName: "User",
       email: "demo@example.com",
-      password: "password",
+      password: "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewgTdvLNs.xKzXdq", // hashed "password123"
       preferences: {},
       createdAt: new Date()
     };

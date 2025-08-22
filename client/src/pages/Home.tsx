@@ -6,10 +6,32 @@ import WalletPanel from "@/components/WalletPanel";
 import SettingsPanel from "@/components/SettingsPanel";
 import { useAIAssistant } from "@/context/AIAssistantContext";
 
+interface User {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
 const Home: React.FC = () => {
   const { wallet, settings, updateSettings } = useAIAssistant();
   const [isWalletOpen, setIsWalletOpen] = React.useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+  const [user, setUser] = React.useState<User | null>(null);
+
+  React.useEffect(() => {
+    // Get current user info
+    fetch("/api/auth/me")
+      .then(res => res.json())
+      .then(data => {
+        if (data.user) {
+          setUser(data.user);
+        }
+      })
+      .catch(() => {
+        // User not authenticated, will be handled by App component
+      });
+  }, []);
   
   const toggleWallet = () => {
     setIsWalletOpen(prev => !prev);
@@ -27,6 +49,8 @@ const Home: React.FC = () => {
         walletBalance={wallet.balance}
         toggleWallet={toggleWallet}
         toggleSettings={toggleSettings}
+        user={user}
+        onLogout={() => setUser(null)}
       />
       
       <ConversationArea />
