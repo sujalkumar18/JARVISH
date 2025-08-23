@@ -316,14 +316,13 @@ export function AIAssistantProvider({ children }: { children: ReactNode }) {
         t.id === taskId ? data.task : t
       ));
       
-      // Update wallet if payment was made
-      if (data.transaction) {
-        updateWalletBalance(data.transaction.amount);
-        
-        // If there was an auto top-up transaction, update that as well
-        if (data.topUpTransaction) {
-          updateWalletBalance(data.topUpTransaction.amount);
-        }
+      // Update wallet with the final balance from backend
+      if (data.wallet) {
+        setWallet(prev => ({
+          ...prev,
+          balance: data.wallet.balance,
+          transactions: data.wallet.transactions
+        }));
       }
       
       // Add confirmation message
