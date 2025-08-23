@@ -22,6 +22,24 @@ export async function processVoiceCommand(text: string): Promise<AIResponse> {
   }
 }
 
+export async function chatWithAI(message: string, useGemini = false): Promise<{ message: string; provider: string; success: boolean }> {
+  try {
+    const response = await apiRequest("POST", "/api/assistant/chat", {
+      message,
+      useGemini,
+    });
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Error chatting with AI:", error);
+    return {
+      message: "I'm having trouble connecting right now. Please try again.",
+      provider: "error",
+      success: false,
+    };
+  }
+}
+
 export async function generateFoodOrder(command: string) {
   try {
     const response = await apiRequest("POST", "/api/assistant/food-order", {

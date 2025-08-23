@@ -71,8 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       req.session.user = {
         id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        username: user.firstName + ' ' + user.lastName,
         email: user.email
       };
       
@@ -118,8 +117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       req.session.user = {
         id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        username: user.firstName + ' ' + user.lastName,
         email: user.email
       };
       
@@ -178,11 +176,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get authenticated user ID
       const userId = getCurrentUserId(req);
       
-      // Process the message (in a real app, this would use NLP/LLM)
+      // Process the message using AI for general queries
       const userInput = validated.message.toLowerCase();
       let responseMessage = "I'm not sure how to help with that. You can ask me to order food, book tickets, or manage your wallet.";
       let task = null;
       let transaction = null;
+      let useAI = false;
       
       // News related (check this first to avoid conflicts)
       if (userInput.includes("news") || userInput.includes("headlines") || userInput.includes("breaking") ||
@@ -854,6 +853,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         responseMessage = `Your current wallet balance is $${balance.toFixed(2)}. You can add money to your wallet or view your transaction history.`;
       }
+      // Use AI for general queries that don't match specific patterns
+      else {
+        useAI = true;
+        try {
+          // Try Hugging Face first (free tier)
+          const response = await fetch('https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              inputs: validated.message,
+              parameters: {
+                max_length: 150,
+                temperature: 0.8,
+                do_sample: true
+              }
+            })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (Array.isArray(data) && data.length > 0) {
+              if (data[0].generated_text) {
+                const fullText = data[0].generated_text;
+                // Extract only the AI response part
+                const aiPart = fullText.replace(validated.message, '').trim();
+                if (aiPart && aiPart.length > 5) {
+                  responseMessage = aiPart;
+                } else {
+                  responseMessage = "I heard you, but I'm still learning how to respond better. Can you try asking in a different way?";
+                }
+              } else if (data[0].response) {
+                responseMessage = data[0].response;
+              }
+            }
+          } else if (process.env.GEMINI_API_KEY) {
+            // Fallback to Gemini if Hugging Face fails
+            const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + process.env.GEMINI_API_KEY, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                contents: [{
+                  parts: [{
+                    text: `You are Jarvis, a helpful AI assistant. Please provide a helpful and concise response to: ${validated.message}`
+                  }]
+                }]
+              })
+            });
+            
+            if (geminiResponse.ok) {
+              const geminiData = await geminiResponse.json();
+              responseMessage = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "I'm having trouble understanding right now.";
+            }
+          }
+        } catch (error) {
+          console.error("AI API error:", error);
+          responseMessage = "I'm thinking about your question, but my brain is a bit fuzzy right now. Can you try asking again?";
+        }
+      }
       
       // Store the messages
       await storage.createMessage({
@@ -962,6 +1024,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error processing voice command:", error);
       res.status(500).json({ message: "Failed to process voice command" });
+    }
+  });
+
+  // AI Q&A endpoint - General chat with AI
+  app.post(`${apiRouter}/assistant/chat`, async (req: Request, res: Response) => {
+    try {
+      const chatSchema = z.object({
+        message: z.string().min(1),
+        useGemini: z.boolean().optional().default(false)
+      });
+      
+      const validated = chatSchema.parse(req.body);
+      const userId = getCurrentUserId(req);
+      
+      let aiResponse = "";
+      let aiProvider = "";
+      
+      // Check if user wants to use Gemini or if it's available
+      if (validated.useGemini && process.env.GEMINI_API_KEY) {
+        try {
+          // Use Gemini API
+          const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + process.env.GEMINI_API_KEY, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{
+                  text: `You are Jarvis, a helpful AI assistant. Please provide a helpful and concise response to: ${validated.message}`
+                }]
+              }]
+            })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
+            aiProvider = "Gemini";
+          } else {
+            throw new Error('Gemini API request failed');
+          }
+        } catch (error) {
+          console.error("Gemini API error:", error);
+          // Fallback to Hugging Face if Gemini fails
+          validated.useGemini = false;
+        }
+      }
+      
+      // Use Hugging Face API if Gemini is not used or failed
+      if (!validated.useGemini) {
+        try {
+          const response = await fetch('https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              inputs: validated.message,
+              parameters: {
+                max_length: 200,
+                temperature: 0.7,
+                do_sample: true
+              }
+            })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            // Handle different response formats from Hugging Face
+            if (Array.isArray(data) && data.length > 0) {
+              if (data[0].generated_text) {
+                aiResponse = data[0].generated_text.replace(validated.message, '').trim();
+              } else if (data[0].response) {
+                aiResponse = data[0].response;
+              } else {
+                aiResponse = data[0];
+              }
+            } else if (typeof data === 'string') {
+              aiResponse = data;
+            } else {
+              aiResponse = "I received your message but I'm having trouble generating a response right now.";
+            }
+            aiProvider = "Hugging Face";
+          } else {
+            throw new Error('Hugging Face API request failed');
+          }
+        } catch (error) {
+          console.error("Hugging Face API error:", error);
+          aiResponse = "I'm having trouble connecting to my AI services right now. Please try again in a moment.";
+          aiProvider = "fallback";
+        }
+      }
+      
+      // Store the conversation in messages
+      await storage.createMessage({
+        userId,
+        content: validated.message,
+        type: "user"
+      });
+      
+      await storage.createMessage({
+        userId,
+        content: aiResponse,
+        type: "assistant"
+      });
+      
+      res.json({
+        message: aiResponse,
+        provider: aiProvider,
+        success: true
+      });
+      
+    } catch (error: any) {
+      console.error("Chat error:", error);
+      res.status(500).json({ message: "Failed to process chat message" });
     }
   });
   
