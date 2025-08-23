@@ -311,7 +311,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // Dictionary lookup
       else if (userInput.includes("define") || userInput.includes("definition") || userInput.includes("meaning") ||
-               userInput.includes("dictionary") || userInput.includes("what does") || userInput.includes("what is")) {
+               userInput.includes("dictionary") || userInput.includes("what does") || userInput.includes("what is") ||
+               userInput.includes("ka matlab") || userInput.includes("means what")) {
         
         try {
           // Extract the word to define
@@ -381,7 +382,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // Translation requests
       else if (userInput.includes("translate") || userInput.includes("in hindi") || userInput.includes("in english") ||
-               userInput.includes("hindi mein") || userInput.includes("english mein")) {
+               userInput.includes("hindi mein") || userInput.includes("english mein") || 
+               userInput.includes("in spanish") || userInput.includes("in french") || userInput.includes("in german") ||
+               userInput.includes("in chinese") || userInput.includes("in japanese") || userInput.includes("in korean") ||
+               userInput.includes("in arabic") || userInput.includes("in russian")) {
         
         try {
           let textToTranslate = "";
@@ -395,17 +399,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
               textToTranslate = translateMatch[1].trim();
               targetLanguage = translateMatch[2].toLowerCase();
             }
-          } else if (userInput.includes("in hindi") || userInput.includes("hindi mein")) {
-            const hindiMatch = userInput.match(/(.+?)\s+(?:in hindi|hindi mein)/);
-            if (hindiMatch) {
-              textToTranslate = hindiMatch[1].trim();
-              targetLanguage = "hindi";
-            }
-          } else if (userInput.includes("in english") || userInput.includes("english mein")) {
-            const englishMatch = userInput.match(/(.+?)\s+(?:in english|english mein)/);
-            if (englishMatch) {
-              textToTranslate = englishMatch[1].trim();
-              targetLanguage = "english";
+          } else {
+            // Handle pattern: "word in language"
+            const languagePatterns = [
+              { pattern: /(.+?)\s+(?:in hindi|hindi mein)/i, language: "hindi" },
+              { pattern: /(.+?)\s+(?:in english|english mein)/i, language: "english" },
+              { pattern: /(.+?)\s+in spanish/i, language: "spanish" },
+              { pattern: /(.+?)\s+in french/i, language: "french" },
+              { pattern: /(.+?)\s+in german/i, language: "german" },
+              { pattern: /(.+?)\s+in chinese/i, language: "chinese" },
+              { pattern: /(.+?)\s+in japanese/i, language: "japanese" },
+              { pattern: /(.+?)\s+in korean/i, language: "korean" },
+              { pattern: /(.+?)\s+in arabic/i, language: "arabic" },
+              { pattern: /(.+?)\s+in russian/i, language: "russian" }
+            ];
+            
+            for (const langPattern of languagePatterns) {
+              const match = userInput.match(langPattern.pattern);
+              if (match) {
+                textToTranslate = match[1].trim();
+                targetLanguage = langPattern.language;
+                break;
+              }
             }
           }
           
