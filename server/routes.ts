@@ -1399,15 +1399,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let topUpTransaction = null;
       
       // Check if balance is insufficient and perform auto top-up if enabled
+      console.log(`Current balance: $${currentBalance}, Task total: $${taskTotal}`);
+      
       if (currentBalance < taskTotal) {
         // Get user settings to check if auto top-up is enabled
         const userSettings = await storage.getUser(userId);
         const autoPaymentEnabled = (userSettings?.preferences as any)?.autoPayment === true || validated.autoTopUp;
         
+        console.log(`Insufficient balance detected. Auto payment enabled: ${autoPaymentEnabled}`);
+        
         if (autoPaymentEnabled) {
           // Calculate how much to top up (round up to nearest $50 increment above the required amount)
           const requiredTopUp = taskTotal - currentBalance;
           const topUpAmount = Math.ceil(requiredTopUp / 50) * 50;
+          
+          console.log(`Auto top-up calculation: required=${requiredTopUp}, topUpAmount=${topUpAmount}`);
           
           // Create a top-up transaction
           topUpTransaction = await storage.createTransaction({
@@ -1428,6 +1434,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             success: false
           });
         }
+      } else {
+        console.log(`Sufficient balance - no auto top-up needed`);
       }
       
       // Update task status
