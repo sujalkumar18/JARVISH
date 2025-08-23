@@ -8,9 +8,8 @@ import { useAIAssistant } from "@/context/AIAssistantContext";
 
 interface User {
   id: number;
-  firstName?: string;
-  lastName?: string;
-  username?: string;
+  firstName: string;
+  lastName: string;
   email: string;
 }
 
@@ -50,7 +49,7 @@ const Home: React.FC = () => {
         walletBalance={wallet.balance}
         toggleWallet={toggleWallet}
         toggleSettings={toggleSettings}
-        user={user || undefined}
+        user={user}
         onLogout={() => setUser(null)}
       />
       

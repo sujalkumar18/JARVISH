@@ -71,7 +71,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       req.session.user = {
         id: user.id,
-        username: user.firstName + ' ' + user.lastName,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email
       };
       
@@ -117,7 +118,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       req.session.user = {
         id: user.id,
-        username: user.firstName + ' ' + user.lastName,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email
       };
       
@@ -176,15 +178,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get authenticated user ID
       const userId = getCurrentUserId(req);
       
-      // Process the message using AI for general queries
+      // Process the message (in a real app, this would use NLP/LLM)
       const userInput = validated.message.toLowerCase();
       let responseMessage = "I'm not sure how to help with that. You can ask me to order food, book tickets, or manage your wallet.";
-      
       let task = null;
       let transaction = null;
-      let useAI = false;
       
-      // News related
+      // News related (check this first to avoid conflicts)
       if (userInput.includes("news") || userInput.includes("headlines") || userInput.includes("breaking") ||
           userInput.includes("current events") || userInput.includes("today's news")) {
         
@@ -248,8 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // Dictionary lookup
       else if (userInput.includes("define") || userInput.includes("definition") || userInput.includes("meaning") ||
-               userInput.includes("dictionary") || userInput.includes("what does") || userInput.includes("what is") ||
-               userInput.includes("ka matlab") || userInput.includes("means what")) {
+               userInput.includes("dictionary") || userInput.includes("what does") || userInput.includes("what is")) {
         
         try {
           // Extract the word to define
@@ -319,10 +318,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // Translation requests
       else if (userInput.includes("translate") || userInput.includes("in hindi") || userInput.includes("in english") ||
-               userInput.includes("hindi mein") || userInput.includes("english mein") || 
-               userInput.includes("in spanish") || userInput.includes("in french") || userInput.includes("in german") ||
-               userInput.includes("in chinese") || userInput.includes("in japanese") || userInput.includes("in korean") ||
-               userInput.includes("in arabic") || userInput.includes("in russian")) {
+               userInput.includes("hindi mein") || userInput.includes("english mein")) {
         
         try {
           let textToTranslate = "";
@@ -336,28 +332,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               textToTranslate = translateMatch[1].trim();
               targetLanguage = translateMatch[2].toLowerCase();
             }
-          } else {
-            // Handle pattern: "word in language"
-            const languagePatterns = [
-              { pattern: /(.+?)\s+(?:in hindi|hindi mein)/i, language: "hindi" },
-              { pattern: /(.+?)\s+(?:in english|english mein)/i, language: "english" },
-              { pattern: /(.+?)\s+in spanish/i, language: "spanish" },
-              { pattern: /(.+?)\s+in french/i, language: "french" },
-              { pattern: /(.+?)\s+in german/i, language: "german" },
-              { pattern: /(.+?)\s+in chinese/i, language: "chinese" },
-              { pattern: /(.+?)\s+in japanese/i, language: "japanese" },
-              { pattern: /(.+?)\s+in korean/i, language: "korean" },
-              { pattern: /(.+?)\s+in arabic/i, language: "arabic" },
-              { pattern: /(.+?)\s+in russian/i, language: "russian" }
-            ];
-            
-            for (const langPattern of languagePatterns) {
-              const match = userInput.match(langPattern.pattern);
-              if (match) {
-                textToTranslate = match[1].trim();
-                targetLanguage = langPattern.language;
-                break;
-              }
+          } else if (userInput.includes("in hindi") || userInput.includes("hindi mein")) {
+            const hindiMatch = userInput.match(/(.+?)\s+(?:in hindi|hindi mein)/);
+            if (hindiMatch) {
+              textToTranslate = hindiMatch[1].trim();
+              targetLanguage = "hindi";
+            }
+          } else if (userInput.includes("in english") || userInput.includes("english mein")) {
+            const englishMatch = userInput.match(/(.+?)\s+(?:in english|english mein)/);
+            if (englishMatch) {
+              textToTranslate = englishMatch[1].trim();
+              targetLanguage = "english";
             }
           }
           
@@ -869,84 +854,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         responseMessage = `Your current wallet balance is $${balance.toFixed(2)}. You can add money to your wallet or view your transaction history.`;
       }
-      // Use AI for general queries that don't match specific patterns
-      // Personal, human-like responses for general queries (check after all functionality)
-      else if (userInput.includes("hello") || userInput.includes("hi")) {
-        const greetings = [
-          "Hey there! Good to see you! What's up?",
-          "Hi! I'm doing great today. How are you?",
-          "Hello! Nice to chat with you again. How's your day going?",
-          "Hey! I'm here and ready to chat. What's on your mind?"
-        ];
-        responseMessage = greetings[Math.floor(Math.random() * greetings.length)];
-      } else if (userInput.includes("how are you")) {
-        const responses = [
-          "I'm doing really well, thanks for asking! Just been helping people out and learning new things. How about you?",
-          "I'm great! Been having some interesting conversations today. What's new with you?",
-          "I'm doing fantastic, thanks! Always excited to chat and help out. How's your day been?",
-          "I'm good! Just here, ready to chat about whatever you want. How are you feeling today?",
-          "Pretty good! I love meeting new people and having conversations. What about you - how's life?"
-        ];
-        responseMessage = responses[Math.floor(Math.random() * responses.length)];
-      } else if (userInput.includes("thank") || userInput.includes("thanks")) {
-        const responses = [
-          "No problem at all! Happy to help anytime.",
-          "You're welcome! That's what friends are for, right?",
-          "Anytime! I really enjoy helping out.",
-          "Don't mention it! I'm just glad I could help.",
-          "Of course! It makes me happy when I can be useful."
-        ];
-        responseMessage = responses[Math.floor(Math.random() * responses.length)];
-      } else if (userInput.includes("good") && (userInput.includes("morning") || userInput.includes("afternoon") || userInput.includes("evening"))) {
-        const responses = [
-          "Good morning to you too! Hope you slept well. What's the plan for today?",
-          "Good afternoon! Beautiful day, isn't it? How can I help?",
-          "Good evening! Hope you had a good day. What's up?",
-          "Hey! Hope your day's been going well. What can I do for you?"
-        ];
-        responseMessage = responses[Math.floor(Math.random() * responses.length)];
-      } else if (userInput.includes("what") && userInput.includes("can") && userInput.includes("do")) {
-        responseMessage = "Oh, lots of things! I love helping with food orders, booking tickets, checking news, weather updates, currency conversion, jokes, word definitions, and so much more. What are you in the mood for? Just talk to me naturally!";
-      } else if (userInput.includes("joke") || userInput.includes("funny")) {
-        const jokes = [
-          "Haha, okay here's one: Why don't scientists trust atoms? Because they make up everything! 😄",
-          "Oh I love this one: I told my wife she was drawing her eyebrows too high. She looked surprised! 😂",
-          "Here's a good one: Why don't eggs tell jokes? They'd crack each other up!",
-          "This always makes me laugh: What do you call a fake noodle? An impasta!",
-          "One of my favorites: Why did the scarecrow win an award? He was outstanding in his field!"
-        ];
-        responseMessage = jokes[Math.floor(Math.random() * jokes.length)];
-      } else if (userInput.includes("help")) {
-        responseMessage = "Absolutely! I'd love to help you out. I'm pretty good with food orders, ticket bookings, news updates, weather checks, and lots more. What do you need? Just ask me like you would ask a friend!";
-      } else if (userInput.includes("who are you") || userInput.includes("what are you")) {
-        const responses = [
-          "I'm Jarvish! Think of me as your helpful AI buddy. I love chatting and helping with daily stuff like ordering food, booking tickets, staying updated - basically making life a bit easier!",
-          "Hey! I'm Jarvish, your personal AI assistant. I'm here to chat and help you with whatever you need - from ordering pizza to checking the weather. I try to be as helpful as possible!",
-          "I'm Jarvish! I'm an AI, but I like to think of myself as a friendly helper. I enjoy conversations and I'm pretty good at getting things done for you."
-        ];
-        responseMessage = responses[Math.floor(Math.random() * responses.length)];
-      } else if (userInput.includes("love") || userInput.includes("like")) {
-        const responses = [
-          "Aww, that's so nice to hear! I really enjoy our chats too. Makes me happy when I can help!",
-          "That's wonderful! I love chatting with you as well. What else can we talk about?",
-          "That really warms my heart! I genuinely enjoy helping and having conversations."
-        ];
-        responseMessage = responses[Math.floor(Math.random() * responses.length)];
-      } else {
-        // For other general queries, provide personal, human-like responses
-        if (userInput.length < 100) {
-          const responses = [
-            "That's really interesting! I might not know everything about that topic, but I'm always curious to learn. Is there something I can help you with - maybe food, tickets, or just chatting?",
-            "I hear you! While I'm best at helping with everyday stuff like ordering food or checking news, I love having conversations. What's on your mind?",
-            "That's cool! I'm still learning about lots of things, but I'm pretty good with practical stuff - food orders, bookings, weather, jokes. What would you like to do?",
-            "I get what you mean! I may not be an expert on everything, but I'm here to chat and help however I can. What can I do for you today?",
-            "Interesting perspective! I'm always up for a good conversation. I'm really good with food orders, news, weather, and stuff like that. What sounds good to you?"
-          ];
-          responseMessage = responses[Math.floor(Math.random() * responses.length)];
-        } else {
-          responseMessage = "Wow, thanks for sharing all that with me! I appreciate when people take the time to explain things. While I might not have expertise in every topic, I'm always here to chat and help with what I can - like food orders, news, weather, or just having a good conversation. What would you like to do?";
-        }
-      }
       
       // Store the messages
       await storage.createMessage({
@@ -1055,123 +962,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error processing voice command:", error);
       res.status(500).json({ message: "Failed to process voice command" });
-    }
-  });
-
-  // AI Q&A endpoint - General chat with AI
-  app.post(`${apiRouter}/assistant/chat`, async (req: Request, res: Response) => {
-    try {
-      const chatSchema = z.object({
-        message: z.string().min(1),
-        useGemini: z.boolean().optional().default(false)
-      });
-      
-      const validated = chatSchema.parse(req.body);
-      const userId = getCurrentUserId(req);
-      
-      let aiResponse = "";
-      let aiProvider = "";
-      
-      // Check if user wants to use Gemini or if it's available
-      if (validated.useGemini && process.env.GEMINI_API_KEY) {
-        try {
-          // Use Gemini API
-          const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + process.env.GEMINI_API_KEY, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents: [{
-                parts: [{
-                  text: `You are Jarvis, a helpful AI assistant. Please provide a helpful and concise response to: ${validated.message}`
-                }]
-              }]
-            })
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            aiResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
-            aiProvider = "Gemini";
-          } else {
-            throw new Error('Gemini API request failed');
-          }
-        } catch (error) {
-          console.error("Gemini API error:", error);
-          // Fallback to Hugging Face if Gemini fails
-          validated.useGemini = false;
-        }
-      }
-      
-      // Use Hugging Face API if Gemini is not used or failed
-      if (!validated.useGemini) {
-        try {
-          const response = await fetch('https://api-inference.huggingface.co/models/gpt2', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              inputs: validated.message,
-              parameters: {
-                max_length: 200,
-                temperature: 0.7,
-                do_sample: true
-              }
-            })
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            // Handle different response formats from Hugging Face
-            if (Array.isArray(data) && data.length > 0) {
-              if (data[0].generated_text) {
-                aiResponse = data[0].generated_text.replace(validated.message, '').trim();
-              } else if (data[0].response) {
-                aiResponse = data[0].response;
-              } else {
-                aiResponse = data[0];
-              }
-            } else if (typeof data === 'string') {
-              aiResponse = data;
-            } else {
-              aiResponse = "I received your message but I'm having trouble generating a response right now.";
-            }
-            aiProvider = "Hugging Face";
-          } else {
-            throw new Error('Hugging Face API request failed');
-          }
-        } catch (error) {
-          console.error("Hugging Face API error:", error);
-          aiResponse = "I'm having trouble connecting to my AI services right now. Please try again in a moment.";
-          aiProvider = "fallback";
-        }
-      }
-      
-      // Store the conversation in messages
-      await storage.createMessage({
-        userId,
-        content: validated.message,
-        type: "user"
-      });
-      
-      await storage.createMessage({
-        userId,
-        content: aiResponse,
-        type: "assistant"
-      });
-      
-      res.json({
-        message: aiResponse,
-        provider: aiProvider,
-        success: true
-      });
-      
-    } catch (error: any) {
-      console.error("Chat error:", error);
-      res.status(500).json({ message: "Failed to process chat message" });
     }
   });
   
@@ -1399,21 +1189,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let topUpTransaction = null;
       
       // Check if balance is insufficient and perform auto top-up if enabled
-      console.log(`Current balance: $${currentBalance}, Task total: $${taskTotal}`);
-      
       if (currentBalance < taskTotal) {
         // Get user settings to check if auto top-up is enabled
         const userSettings = await storage.getUser(userId);
         const autoPaymentEnabled = (userSettings?.preferences as any)?.autoPayment === true || validated.autoTopUp;
         
-        console.log(`Insufficient balance detected. Auto payment enabled: ${autoPaymentEnabled}`);
-        
         if (autoPaymentEnabled) {
           // Calculate how much to top up (round up to nearest $50 increment above the required amount)
           const requiredTopUp = taskTotal - currentBalance;
           const topUpAmount = Math.ceil(requiredTopUp / 50) * 50;
-          
-          console.log(`Auto top-up calculation: required=${requiredTopUp}, topUpAmount=${topUpAmount}`);
           
           // Create a top-up transaction
           topUpTransaction = await storage.createTransaction({
@@ -1434,8 +1218,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             success: false
           });
         }
-      } else {
-        console.log(`Sufficient balance - no auto top-up needed`);
       }
       
       // Update task status

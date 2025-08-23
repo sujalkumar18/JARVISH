@@ -26,15 +26,35 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
       // Check if we need auto top-up
       const taskTotal = (task as any).total || 0;
       
-      if (wallet.balance < taskTotal && !settings.autoPayment) {
-        // Insufficient balance and auto payment is disabled
-        setPaymentError("Insufficient funds. Enable auto top-up or add funds to your wallet.");
-        setIsProcessing(false);
-        return;
+      if (wallet.balance < taskTotal) {
+        // Insufficient balance, need to check if auto top-up is enabled
+        if (!settings.autoPayment) {
+          setPaymentError("Insufficient funds. Enable auto top-up or add funds to your wallet.");
+          setIsProcessing(false);
+          return;
+        }
+        
+        // Process payment with auto top-up
+        const response = await apiRequest("POST", "/api/wallet/process-payment", {
+          amount: taskTotal,
+          description: task.type === "food" ? (task as FoodOrderTask).restaurant : "Movie Tickets",
+          autoTopUp: true
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+          setPaymentError(result.message || "Payment failed");
+          setIsProcessing(false);
+          return;
+        }
+        
+        // If payment was successful, continue with the confirmation
+        await confirmTask(taskId);
+      } else {
+        // Sufficient balance, proceed normally
+        await confirmTask(taskId);
       }
-      
-      // Use confirmTask which will handle payment processing and auto top-up
-      await confirmTask(taskId);
     } catch (error) {
       console.error("Error confirming task:", error);
       setPaymentError("An error occurred. Please try again.");
