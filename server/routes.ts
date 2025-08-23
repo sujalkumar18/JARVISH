@@ -184,71 +184,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let transaction = null;
       let useAI = false;
       
-      // Personal, human-like responses for general queries (check these first)
-      if (userInput.includes("hello") || userInput.includes("hi")) {
-        const greetings = [
-          "Hey there! Good to see you! What's up?",
-          "Hi! I'm doing great today. How are you?",
-          "Hello! Nice to chat with you again. How's your day going?",
-          "Hey! I'm here and ready to chat. What's on your mind?"
-        ];
-        responseMessage = greetings[Math.floor(Math.random() * greetings.length)];
-      } else if (userInput.includes("how are you")) {
-        const responses = [
-          "I'm doing really well, thanks for asking! Just been helping people out and learning new things. How about you?",
-          "I'm great! Been having some interesting conversations today. What's new with you?",
-          "I'm doing fantastic, thanks! Always excited to chat and help out. How's your day been?",
-          "I'm good! Just here, ready to chat about whatever you want. How are you feeling today?",
-          "Pretty good! I love meeting new people and having conversations. What about you - how's life?"
-        ];
-        responseMessage = responses[Math.floor(Math.random() * responses.length)];
-      } else if (userInput.includes("thank") || userInput.includes("thanks")) {
-        const responses = [
-          "No problem at all! Happy to help anytime.",
-          "You're welcome! That's what friends are for, right?",
-          "Anytime! I really enjoy helping out.",
-          "Don't mention it! I'm just glad I could help.",
-          "Of course! It makes me happy when I can be useful."
-        ];
-        responseMessage = responses[Math.floor(Math.random() * responses.length)];
-      } else if (userInput.includes("good") && (userInput.includes("morning") || userInput.includes("afternoon") || userInput.includes("evening"))) {
-        const responses = [
-          "Good morning to you too! Hope you slept well. What's the plan for today?",
-          "Good afternoon! Beautiful day, isn't it? How can I help?",
-          "Good evening! Hope you had a good day. What's up?",
-          "Hey! Hope your day's been going well. What can I do for you?"
-        ];
-        responseMessage = responses[Math.floor(Math.random() * responses.length)];
-      } else if (userInput.includes("what") && userInput.includes("can") && userInput.includes("do")) {
-        responseMessage = "Oh, lots of things! I love helping with food orders, booking tickets, checking news, weather updates, currency conversion, jokes, word definitions, and so much more. What are you in the mood for? Just talk to me naturally!";
-      } else if (userInput.includes("joke") || userInput.includes("funny")) {
-        const jokes = [
-          "Haha, okay here's one: Why don't scientists trust atoms? Because they make up everything! 😄",
-          "Oh I love this one: I told my wife she was drawing her eyebrows too high. She looked surprised! 😂",
-          "Here's a good one: Why don't eggs tell jokes? They'd crack each other up!",
-          "This always makes me laugh: What do you call a fake noodle? An impasta!",
-          "One of my favorites: Why did the scarecrow win an award? He was outstanding in his field!"
-        ];
-        responseMessage = jokes[Math.floor(Math.random() * jokes.length)];
-      } else if (userInput.includes("help")) {
-        responseMessage = "Absolutely! I'd love to help you out. I'm pretty good with food orders, ticket bookings, news updates, weather checks, and lots more. What do you need? Just ask me like you would ask a friend!";
-      } else if (userInput.includes("who are you") || userInput.includes("what are you")) {
-        const responses = [
-          "I'm Jarvis! Think of me as your helpful AI buddy. I love chatting and helping with daily stuff like ordering food, booking tickets, staying updated - basically making life a bit easier!",
-          "Hey! I'm Jarvis, your personal AI assistant. I'm here to chat and help you with whatever you need - from ordering pizza to checking the weather. I try to be as helpful as possible!",
-          "I'm Jarvis! I'm an AI, but I like to think of myself as a friendly helper. I enjoy conversations and I'm pretty good at getting things done for you."
-        ];
-        responseMessage = responses[Math.floor(Math.random() * responses.length)];
-      } else if (userInput.includes("love") || userInput.includes("like")) {
-        const responses = [
-          "Aww, that's so nice to hear! I really enjoy our chats too. Makes me happy when I can help!",
-          "That's wonderful! I love chatting with you as well. What else can we talk about?",
-          "That really warms my heart! I genuinely enjoy helping and having conversations."
-        ];
-        responseMessage = responses[Math.floor(Math.random() * responses.length)];
-      }
-      // News related (check this after greetings to avoid conflicts)
-      else if (userInput.includes("news") || userInput.includes("headlines") || userInput.includes("breaking") ||
+      // News related
+      if (userInput.includes("news") || userInput.includes("headlines") || userInput.includes("breaking") ||
           userInput.includes("current events") || userInput.includes("today's news")) {
         
         try {
@@ -933,21 +870,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         responseMessage = `Your current wallet balance is $${balance.toFixed(2)}. You can add money to your wallet or view your transaction history.`;
       }
       // Use AI for general queries that don't match specific patterns
-      else {
-        // For other general queries, provide personal, human-like responses
-        useAI = true;
-        if (userInput.length < 100) {
-          const responses = [
-            "That's really interesting! I might not know everything about that topic, but I'm always curious to learn. Is there something I can help you with - maybe food, tickets, or just chatting?",
-            "I hear you! While I'm best at helping with everyday stuff like ordering food or checking news, I love having conversations. What's on your mind?",
-            "That's cool! I'm still learning about lots of things, but I'm pretty good with practical stuff - food orders, bookings, weather, jokes. What would you like to do?",
-            "I get what you mean! I may not be an expert on everything, but I'm here to chat and help however I can. What can I do for you today?",
-            "Interesting perspective! I'm always up for a good conversation. I'm really good with food orders, news, weather, and stuff like that. What sounds good to you?"
-          ];
-          responseMessage = responses[Math.floor(Math.random() * responses.length)];
-        } else {
-          responseMessage = "Wow, thanks for sharing all that with me! I appreciate when people take the time to explain things. While I might not have expertise in every topic, I'm always here to chat and help with what I can - like food orders, news, weather, or just having a good conversation. What would you like to do?";
-        }
+      // Simple greetings and basic responses (check after all functionality)
+      else if (userInput.includes("hello") || userInput.includes("hi there") || userInput.includes("hey")) {
+        responseMessage = "Hello! How can I help you today?";
+      } else if (userInput.includes("how are you")) {
+        responseMessage = "I'm doing well, thanks! How can I assist you?";
+      } else if (userInput.includes("thank") || userInput.includes("thanks")) {
+        responseMessage = "You're welcome! Happy to help.";
+      } else if (userInput.includes("who are you") || userInput.includes("what are you")) {
+        responseMessage = "I'm Jarvis, your AI assistant. I can help with food orders, tickets, news, weather, and more.";
+      } else if (userInput.includes("help")) {
+        responseMessage = "I can help you with food orders, ticket bookings, news updates, weather, currency conversion, and word definitions. What would you like to do?";
+      } else {
+        // Simple fallback
+        responseMessage = "I can help you with food orders, ticket bookings, news, weather, currency conversion, and translations. What would you like to do?";
       }
       
       // Store the messages
