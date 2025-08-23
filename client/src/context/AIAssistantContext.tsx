@@ -305,7 +305,8 @@ export function AIAssistantProvider({ children }: { children: ReactNode }) {
       }
       
       const response = await apiRequest("POST", "/api/tasks/confirm", {
-        taskId
+        taskId,
+        autoTopUp: settings.autoPayment
       });
       
       const data = await response.json();
