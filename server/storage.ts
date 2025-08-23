@@ -282,7 +282,7 @@ export class DatabaseStorage implements IStorage {
       const [existingUser] = await db
         .select()
         .from(users)
-        .where(eq(users.username, "demo"));
+        .where(eq(users.email, "demo@example.com"));
       
       if (existingUser) {
         return; // Data already exists
@@ -292,7 +292,9 @@ export class DatabaseStorage implements IStorage {
       const [user] = await db
         .insert(users)
         .values({
-          username: "demo",
+          firstName: "Demo",
+          lastName: "User", 
+          email: "demo@example.com",
           password: "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewgTdvLNs.xKzXdq", // hashed "password123"
           preferences: {}
         })

@@ -11,7 +11,7 @@ import { signupSchema, loginSchema } from "@shared/schema";
 declare module "express-session" {
   interface SessionData {
     userId?: number;
-    user?: { id: number; username: string; email: string };
+    user?: { id: number; firstName: string; lastName: string; email: string };
   }
 }
 

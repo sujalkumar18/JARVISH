@@ -103,11 +103,11 @@ const Header: React.FC<HeaderProps> = ({
               <Button variant="ghost" className="flex items-center space-x-2 h-8 px-2 bg-gray-100 dark:bg-gray-800">
                 <Avatar className="h-6 w-6">
                   <AvatarFallback className="text-xs bg-primary text-white">
-                    {user.firstName[0]}{user.lastName[0]}
+                    {user.firstName?.[0] || 'U'}{user.lastName?.[0] || ''}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm text-gray-700 dark:text-gray-300 hidden sm:block">
-                  {user.firstName} {user.lastName}
+                  {user.firstName || ''} {user.lastName || ''}
                 </span>
               </Button>
             </DropdownMenuTrigger>
@@ -115,7 +115,7 @@ const Header: React.FC<HeaderProps> = ({
               <DropdownMenuItem className="flex items-center space-x-2">
                 <User className="h-4 w-4" />
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium">{user.firstName} {user.lastName}</span>
+                  <span className="text-sm font-medium">{user.firstName || ''} {user.lastName || ''}</span>
                   <span className="text-xs text-gray-500">{user.email}</span>
                 </div>
               </DropdownMenuItem>

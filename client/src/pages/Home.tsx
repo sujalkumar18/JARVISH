@@ -49,7 +49,7 @@ const Home: React.FC = () => {
         walletBalance={wallet.balance}
         toggleWallet={toggleWallet}
         toggleSettings={toggleSettings}
-        user={user}
+        user={user || undefined}
         onLogout={() => setUser(null)}
       />
       
