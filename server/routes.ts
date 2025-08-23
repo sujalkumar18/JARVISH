@@ -179,6 +179,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process the message using AI for general queries
       const userInput = validated.message.toLowerCase();
       let responseMessage = "I'm not sure how to help with that. You can ask me to order food, book tickets, or manage your wallet.";
+      
+      // Smart AI-like responses for general queries
+      if (userInput.includes("hello") || userInput.includes("hi")) {
+        const greetings = [
+          "Hello! I'm Jarvis, your AI assistant. How can I help you today?",
+          "Hi there! I'm here and ready to assist you with anything you need.",
+          "Hello! Great to see you. What can I help you with?",
+          "Hi! I'm your AI assistant Jarvis. How may I assist you today?"
+        ];
+        responseMessage = greetings[Math.floor(Math.random() * greetings.length)];
+      } else if (userInput.includes("how are you")) {
+        const responses = [
+          "I'm doing excellent, thank you for asking! I'm here and ready to help you with orders, bookings, or any questions.",
+          "I'm doing great! Always happy to chat and assist you. What can I help you with today?",
+          "I'm functioning perfectly and feeling helpful! How can I assist you?",
+          "I'm wonderful, thanks for asking! I'm here to help with whatever you need."
+        ];
+        responseMessage = responses[Math.floor(Math.random() * responses.length)];
+      } else if (userInput.includes("thank") || userInput.includes("thanks")) {
+        const responses = [
+          "You're very welcome! I'm always happy to help.",
+          "My pleasure! That's what I'm here for.",
+          "Glad I could help! Is there anything else you need?",
+          "You're welcome! I'm here whenever you need assistance."
+        ];
+        responseMessage = responses[Math.floor(Math.random() * responses.length)];
+      } else if (userInput.includes("good") && (userInput.includes("morning") || userInput.includes("afternoon") || userInput.includes("evening"))) {
+        const responses = [
+          "Good morning! Hope you're having a wonderful day. How can I help?",
+          "Good afternoon! What can I assist you with today?",
+          "Good evening! How may I help you tonight?",
+          "Hello! Hope you're having a great day. What can I do for you?"
+        ];
+        responseMessage = responses[Math.floor(Math.random() * responses.length)];
+      } else if (userInput.includes("what") && userInput.includes("can") && userInput.includes("do")) {
+        responseMessage = "I can help you with many things! I can order food, book movie tickets, manage your wallet, get the latest news, look up word definitions, check the weather, convert currencies, tell jokes, search Wikipedia, and much more. Just ask me naturally!";
+      } else if (userInput.includes("joke") || userInput.includes("funny")) {
+        const jokes = [
+          "Why don't scientists trust atoms? Because they make up everything!",
+          "I told my wife she was drawing her eyebrows too high. She looked surprised.",
+          "Why don't eggs tell jokes? They'd crack each other up!",
+          "What do you call a fake noodle? An impasta!",
+          "Why did the scarecrow win an award? He was outstanding in his field!"
+        ];
+        responseMessage = jokes[Math.floor(Math.random() * jokes.length)];
+      } else if (userInput.includes("help")) {
+        responseMessage = "Of course! I'm here to help. I can assist with ordering food, booking tickets, managing payments, getting news, looking up definitions, checking weather, and much more. What would you like to do?";
+      } else if (userInput.includes("who are you") || userInput.includes("what are you")) {
+        responseMessage = "I'm Jarvis, your AI-powered voice assistant! I can help you with everyday tasks like ordering food, booking tickets, managing your wallet, staying updated with news, and much more. Think of me as your personal assistant.";
+      } else if (userInput.includes("love") || userInput.includes("like")) {
+        responseMessage = "That's wonderful! I'm glad you're enjoying our interaction. I love helping you with whatever you need. What can I assist you with?";
+      }
       let task = null;
       let transaction = null;
       let useAI = false;
@@ -855,65 +907,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // Use AI for general queries that don't match specific patterns
       else {
+        // For other general queries, provide smart contextual responses
         useAI = true;
-        try {
-          // Try Hugging Face first (free tier)
-          const response = await fetch('https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              inputs: validated.message,
-              parameters: {
-                max_length: 150,
-                temperature: 0.8,
-                do_sample: true
-              }
-            })
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (Array.isArray(data) && data.length > 0) {
-              if (data[0].generated_text) {
-                const fullText = data[0].generated_text;
-                // Extract only the AI response part
-                const aiPart = fullText.replace(validated.message, '').trim();
-                if (aiPart && aiPart.length > 5) {
-                  responseMessage = aiPart;
-                } else {
-                  responseMessage = "I heard you, but I'm still learning how to respond better. Can you try asking in a different way?";
-                }
-              } else if (data[0].response) {
-                responseMessage = data[0].response;
-              }
-            }
-          } else if (process.env.GEMINI_API_KEY) {
-            // Fallback to Gemini if Hugging Face fails
-            const geminiResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + process.env.GEMINI_API_KEY, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                contents: [{
-                  parts: [{
-                    text: `You are Jarvis, a helpful AI assistant. Please provide a helpful and concise response to: ${validated.message}`
-                  }]
-                }]
-              })
-            });
-            
-            if (geminiResponse.ok) {
-              const geminiData = await geminiResponse.json();
-              responseMessage = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "I'm having trouble understanding right now.";
-            }
-          }
-        } catch (error) {
-          console.error("AI API error:", error);
-          responseMessage = "I'm thinking about your question, but my brain is a bit fuzzy right now. Can you try asking again?";
+        if (userInput.length < 100) {
+          const responses = [
+            "That's interesting! While I specialize in helping with food orders, tickets, and daily tasks, I'm always learning. How can I assist you today?",
+            "I appreciate you sharing that with me! I'm here to help with orders, bookings, news, and more. What would you like to do?",
+            "Thanks for that! I'm designed to help with practical tasks like ordering food, managing your wallet, and staying informed. What can I help you with?",
+            "I understand. I'm your AI assistant focused on making your daily tasks easier - from food delivery to entertainment. How may I assist you?"
+          ];
+          responseMessage = responses[Math.floor(Math.random() * responses.length)];
+        } else {
+          responseMessage = "I appreciate your detailed message! While I'm great at helping with food orders, ticket bookings, news updates, and daily tasks, I might not have specific expertise in all topics. How can I assist you with something I specialize in?";
         }
       }
       
@@ -1076,7 +1081,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use Hugging Face API if Gemini is not used or failed
       if (!validated.useGemini) {
         try {
-          const response = await fetch('https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium', {
+          const response = await fetch('https://api-inference.huggingface.co/models/gpt2', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
