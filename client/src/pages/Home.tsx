@@ -45,7 +45,7 @@ const Home: React.FC = () => {
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900 transition-all duration-300">
-      <div className="max-w-4xl mx-auto h-screen flex flex-col glass-card border-0 shadow-2xl overflow-hidden">
+      <div className="max-w-md mx-auto h-screen flex flex-col glass-card border-0 shadow-2xl overflow-hidden">
         <Header 
           walletBalance={wallet.balance}
           toggleWallet={toggleWallet}

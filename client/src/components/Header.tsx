@@ -49,20 +49,20 @@ const Header: React.FC<HeaderProps> = ({
   };
   
   return (
-    <header className="px-6 py-4 flex justify-between items-center border-b border-white/20 dark:border-gray-700/50 backdrop-blur-lg bg-white/10 dark:bg-slate-900/20">
-      <div className="flex items-center space-x-3">
-        <div className="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center shadow-lg animate-pulse-soft">
-          <Bot className="text-white h-5 w-5" />
+    <header className="px-4 py-3 flex justify-between items-center border-b border-white/20 dark:border-gray-700/50 backdrop-blur-lg bg-white/10 dark:bg-slate-900/20">
+      <div className="flex items-center space-x-2">
+        <div className="w-8 h-8 gradient-bg rounded-xl flex items-center justify-center shadow-lg animate-pulse-soft">
+          <Bot className="text-white h-4 w-4" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Jarvish
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400">AI Voice Assistant</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">AI Assistant</p>
         </div>
       </div>
       
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-2">
         <button 
           onClick={toggleWallet}
           className="flex items-center px-4 py-2 glass-card rounded-xl text-sm hover:shadow-lg transition-all duration-200 hover:scale-105"

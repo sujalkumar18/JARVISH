@@ -56,12 +56,12 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
           </span>
         </div>
         
-        <div className="p-6">
+        <div className="p-4">
           {task.image && (
             <img 
               src={task.image} 
               alt={`${task.restaurant} food`} 
-              className="w-full h-40 object-cover rounded-xl mb-4 shadow-md ring-1 ring-gray-200 dark:ring-gray-700"
+              className="w-full h-32 object-cover rounded-xl mb-3 shadow-md ring-1 ring-gray-200 dark:ring-gray-700"
             />
           )}
           
@@ -133,7 +133,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                 <button 
                   onClick={() => handleConfirm(task.id)}
                   disabled={isProcessing}
-                  className="flex-1 gradient-bg hover:shadow-lg text-white py-3 px-4 rounded-xl font-semibold flex items-center justify-center transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 gradient-bg hover:shadow-lg text-white py-2 px-3 rounded-xl font-semibold flex items-center justify-center transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                   data-testid="button-confirm-food"
                 >
                   {isProcessing ? (
@@ -148,7 +148,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                 <button 
                   onClick={() => cancelTask(task.id)}
                   disabled={isProcessing}
-                  className="flex-1 glass-card hover:shadow-lg text-gray-800 dark:text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 glass-card hover:shadow-lg text-gray-800 dark:text-white py-2 px-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                   data-testid="button-cancel-food"
                 >
                   ❌ Cancel

@@ -23,16 +23,16 @@ const ConversationArea: React.FC = () => {
   };
   
   return (
-    <main className="flex-1 overflow-y-auto p-6 pb-32 bg-transparent">
-      <div className="space-y-8">
+    <main className="flex-1 overflow-y-auto p-4 pb-24 bg-transparent">
+      <div className="space-y-6">
         {messages.map((message, index) => (
           <div key={message.id} className="animate-fade-in">
             {message.type === "assistant" ? (
-              <div className="flex items-start space-x-4">
-                <div className="w-10 h-10 gradient-bg rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-blue-100 dark:ring-blue-900/20">
-                  <Bot className="text-white h-5 w-5" />
+              <div className="flex items-start space-x-3">
+                <div className="w-8 h-8 gradient-bg rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-blue-100 dark:ring-blue-900/20">
+                  <Bot className="text-white h-4 w-4" />
                 </div>
-                <div className="space-y-4 max-w-[80%]">
+                <div className="space-y-3 max-w-[85%]">
                   <div className="chat-bubble glass-card bg-white/80 dark:bg-slate-800/90 border-l-4 border-blue-500">
                     <p className="text-gray-800 dark:text-gray-100 leading-relaxed">{message.content}</p>
                   </div>
@@ -46,12 +46,12 @@ const ConversationArea: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="flex items-start justify-end space-x-4">
-                <div className="gradient-bg chat-bubble max-w-[80%] shadow-lg ring-1 ring-white/20">
+              <div className="flex items-start justify-end space-x-3">
+                <div className="gradient-bg chat-bubble max-w-[85%] shadow-lg ring-1 ring-white/20">
                   <p className="text-white font-medium">{message.content}</p>
                 </div>
-                <div className="w-10 h-10 glass-card rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-purple-100 dark:ring-purple-900/20">
-                  <User className="text-gray-600 dark:text-gray-300 h-5 w-5" />
+                <div className="w-8 h-8 glass-card rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg ring-2 ring-purple-100 dark:ring-purple-900/20">
+                  <User className="text-gray-600 dark:text-gray-300 h-4 w-4" />
                 </div>
               </div>
             )}
