@@ -44,31 +44,33 @@ const Home: React.FC = () => {
   };
   
   return (
-    <div className="max-w-md mx-auto h-screen flex flex-col bg-light-gray dark:bg-dark-gray transition-colors duration-200">
-      <Header 
-        walletBalance={wallet.balance}
-        toggleWallet={toggleWallet}
-        toggleSettings={toggleSettings}
-        user={user || undefined}
-        onLogout={() => setUser(null)}
-      />
-      
-      <ConversationArea />
-      
-      <VoiceInput />
-      
-      <WalletPanel 
-        isOpen={isWalletOpen}
-        closeWallet={() => setIsWalletOpen(false)}
-        wallet={wallet}
-      />
-      
-      <SettingsPanel 
-        isOpen={isSettingsOpen}
-        closeSettings={() => setIsSettingsOpen(false)}
-        settings={settings}
-        updateSettings={updateSettings}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900 transition-all duration-300">
+      <div className="max-w-4xl mx-auto h-screen flex flex-col glass-card border-0 shadow-2xl overflow-hidden">
+        <Header 
+          walletBalance={wallet.balance}
+          toggleWallet={toggleWallet}
+          toggleSettings={toggleSettings}
+          user={user || undefined}
+          onLogout={() => setUser(null)}
+        />
+        
+        <ConversationArea />
+        
+        <VoiceInput />
+        
+        <WalletPanel 
+          isOpen={isWalletOpen}
+          closeWallet={() => setIsWalletOpen(false)}
+          wallet={wallet}
+        />
+        
+        <SettingsPanel 
+          isOpen={isSettingsOpen}
+          closeSettings={() => setIsSettingsOpen(false)}
+          settings={settings}
+          updateSettings={updateSettings}
+        />
+      </div>
     </div>
   );
 };

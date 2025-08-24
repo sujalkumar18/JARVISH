@@ -54,27 +54,29 @@ const VoiceInput: React.FC = () => {
   
   if (!browserSupportsSpeechRecognition) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto">
-        <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4">
-          <form onSubmit={handleSubmit} className="flex items-center">
-            <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center px-4 py-2 mr-2">
+      <div className="fixed bottom-0 left-0 right-0 max-w-4xl mx-auto p-6">
+        <div className="glass-card border-white/20 shadow-2xl rounded-2xl p-4">
+          <form onSubmit={handleSubmit} className="flex items-center gap-3">
+            <div className="flex-1 glass-card rounded-2xl flex items-center px-4 py-3 border-white/10">
               <input
                 type="text"
                 value={userInput}
                 onChange={handleInputChange}
                 placeholder="Type a message..."
-                className="flex-1 bg-transparent outline-none text-gray-800 dark:text-white"
+                className="flex-1 bg-transparent outline-none text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                data-testid="input-message"
               />
               <button 
                 type="submit" 
                 disabled={!userInput.trim()}
-                className="text-primary p-1 disabled:opacity-50"
+                className="gradient-bg text-white p-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all duration-200 hover:scale-105"
+                data-testid="button-send"
               >
                 <SendHorizontal className="h-5 w-5" />
               </button>
             </div>
             
-            <div className="w-12 h-12 bg-gray-300 dark:bg-gray-700 rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 glass-card rounded-2xl flex items-center justify-center">
               <span className="text-xs text-gray-500 dark:text-gray-400">No mic</span>
             </div>
           </form>
@@ -87,21 +89,23 @@ const VoiceInput: React.FC = () => {
   }
   
   return (
-    <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto">
-      <div className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 p-4">
-        <form onSubmit={handleSubmit} className="flex items-center">
-          <div className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center px-4 py-2 mr-2">
+    <div className="fixed bottom-0 left-0 right-0 max-w-4xl mx-auto p-6">
+      <div className="glass-card border-white/20 shadow-2xl rounded-2xl p-4">
+        <form onSubmit={handleSubmit} className="flex items-center gap-3">
+          <div className="flex-1 glass-card rounded-2xl flex items-center px-4 py-3 border-white/10">
             <input
               type="text"
               value={userInput}
               onChange={handleInputChange}
               placeholder="Type a message..."
-              className="flex-1 bg-transparent outline-none text-gray-800 dark:text-white"
+              className="flex-1 bg-transparent outline-none text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+              data-testid="input-message"
             />
             <button 
               type="submit" 
               disabled={!userInput.trim()}
-              className="text-primary p-1 disabled:opacity-50"
+              className="gradient-bg text-white p-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all duration-200 hover:scale-105"
+              data-testid="button-send"
             >
               <SendHorizontal className="h-5 w-5" />
             </button>
@@ -110,13 +114,18 @@ const VoiceInput: React.FC = () => {
           <button 
             type="button"
             onClick={toggleVoiceInput}
-            className="w-12 h-12 bg-primary rounded-full flex items-center justify-center relative"
+            className={`w-14 h-14 rounded-2xl flex items-center justify-center relative transition-all duration-300 hover:scale-110 shadow-lg ${
+              listening 
+                ? 'bg-red-500 hover:bg-red-600 animate-pulse-soft ring-4 ring-red-200 dark:ring-red-900/50' 
+                : 'gradient-bg hover:shadow-xl ring-2 ring-blue-200 dark:ring-blue-900/50'
+            }`}
+            data-testid="button-voice"
           >
             {listening && (
-              <div className="absolute w-full h-full rounded-full bg-primary opacity-70 animate-[pulse-ring_1.25s_cubic-bezier(0.215,0.61,0.355,1)_infinite]"></div>
+              <div className="absolute w-full h-full rounded-2xl bg-red-400 opacity-60 animate-ping"></div>
             )}
             {listening ? (
-              <StopCircle className="text-white h-6 w-6" />
+              <StopCircle className="text-white h-6 w-6 z-10" />
             ) : (
               <Mic className="text-white h-6 w-6" />
             )}
@@ -124,14 +133,14 @@ const VoiceInput: React.FC = () => {
         </form>
         
         {listening && (
-          <div className="mt-3 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Listening...</p>
-            <div className="flex items-center justify-center h-6 space-x-1">
-              <span className="w-1 h-5 bg-primary rounded-full animate-[wave_1s_ease-in-out_infinite]"></span>
-              <span className="w-1 h-5 bg-primary rounded-full animate-[wave_1s_ease-in-out_0.1s_infinite]"></span>
-              <span className="w-1 h-5 bg-primary rounded-full animate-[wave_1s_ease-in-out_0.2s_infinite]"></span>
-              <span className="w-1 h-5 bg-primary rounded-full animate-[wave_1s_ease-in-out_0.3s_infinite]"></span>
-              <span className="w-1 h-5 bg-primary rounded-full animate-[wave_1s_ease-in-out_0.4s_infinite]"></span>
+          <div className="mt-4 text-center animate-fade-in">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">🎤 Listening...</p>
+            <div className="flex items-center justify-center h-8 space-x-1">
+              <span className="w-2 h-6 bg-gradient-to-t from-red-400 to-red-600 rounded-full animate-[wave_1s_ease-in-out_infinite]"></span>
+              <span className="w-2 h-6 bg-gradient-to-t from-red-400 to-red-600 rounded-full animate-[wave_1s_ease-in-out_0.1s_infinite]"></span>
+              <span className="w-2 h-6 bg-gradient-to-t from-red-400 to-red-600 rounded-full animate-[wave_1s_ease-in-out_0.2s_infinite]"></span>
+              <span className="w-2 h-6 bg-gradient-to-t from-red-400 to-red-600 rounded-full animate-[wave_1s_ease-in-out_0.3s_infinite]"></span>
+              <span className="w-2 h-6 bg-gradient-to-t from-red-400 to-red-600 rounded-full animate-[wave_1s_ease-in-out_0.4s_infinite]"></span>
             </div>
           </div>
         )}

@@ -49,21 +49,27 @@ const Header: React.FC<HeaderProps> = ({
   };
   
   return (
-    <header className="px-4 py-3 flex justify-between items-center border-b dark:border-gray-700">
-      <div className="flex items-center space-x-2">
-        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-          <Bot className="text-white h-4 w-4" />
+    <header className="px-6 py-4 flex justify-between items-center border-b border-white/20 dark:border-gray-700/50 backdrop-blur-lg bg-white/10 dark:bg-slate-900/20">
+      <div className="flex items-center space-x-3">
+        <div className="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center shadow-lg animate-pulse-soft">
+          <Bot className="text-white h-5 w-5" />
         </div>
-        <h1 className="text-xl font-bold text-gray-800 dark:text-white">Jarvish</h1>
+        <div>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Jarvish
+          </h1>
+          <p className="text-xs text-gray-500 dark:text-gray-400">AI Voice Assistant</p>
+        </div>
       </div>
       
       <div className="flex items-center space-x-3">
         <button 
           onClick={toggleWallet}
-          className="flex items-center px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-sm"
+          className="flex items-center px-4 py-2 glass-card rounded-xl text-sm hover:shadow-lg transition-all duration-200 hover:scale-105"
+          data-testid="button-wallet"
         >
           <svg 
-            className="mr-2 h-4 w-4 text-primary" 
+            className="mr-2 h-4 w-4 text-green-500" 
             xmlns="http://www.w3.org/2000/svg" 
             viewBox="0 0 24 24" 
             fill="none" 
@@ -76,56 +82,61 @@ const Header: React.FC<HeaderProps> = ({
             <path d="M4 6v12c0 1.1.9 2 2 2h14v-4" />
             <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
           </svg>
-          <span className="font-medium text-gray-700 dark:text-gray-300">
+          <span className="font-semibold text-gray-800 dark:text-white">
             ${walletBalance.toFixed(2)}
           </span>
         </button>
         
         <button 
           onClick={toggleTheme}
-          className="text-gray-600 dark:text-gray-300 p-1"
+          className="p-2 glass-card rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-105"
           aria-label="Toggle theme"
+          data-testid="button-theme-toggle"
         >
-          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          {theme === 'dark' ? 
+            <Sun className="h-5 w-5 text-yellow-500" /> : 
+            <Moon className="h-5 w-5 text-indigo-600" />
+          }
         </button>
         
         <button 
           onClick={toggleSettings}
-          className="text-gray-600 dark:text-gray-300 p-1"
+          className="p-2 glass-card rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-105"
           aria-label="Open settings"
+          data-testid="button-settings"
         >
-          <Settings className="h-5 w-5" />
+          <Settings className="h-5 w-5 text-gray-600 dark:text-gray-300" />
         </button>
         
         {user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center space-x-2 h-8 px-2 bg-gray-100 dark:bg-gray-800">
-                <Avatar className="h-6 w-6">
-                  <AvatarFallback className="text-xs bg-primary text-white">
+              <Button variant="ghost" className="flex items-center space-x-2 h-10 px-3 glass-card rounded-xl hover:shadow-lg transition-all duration-200 hover:scale-105">
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback className="text-xs gradient-bg text-white font-semibold">
                     {user.firstName?.[0] || 'U'}{user.lastName?.[0] || ''}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-sm text-gray-700 dark:text-gray-300 hidden sm:block">
+                <span className="text-sm font-medium text-gray-800 dark:text-white hidden sm:block">
                   {user.firstName || ''} {user.lastName || ''}
                 </span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem className="flex items-center space-x-2">
-                <User className="h-4 w-4" />
+            <DropdownMenuContent align="end" className="w-56 glass-card border-white/20">
+              <DropdownMenuItem className="flex items-center space-x-3 p-3">
+                <User className="h-4 w-4 text-blue-500" />
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium">{user.firstName || ''} {user.lastName || ''}</span>
-                  <span className="text-xs text-gray-500">{user.email}</span>
+                  <span className="text-sm font-semibold">{user.firstName || ''} {user.lastName || ''}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{user.email}</span>
                 </div>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
               <DropdownMenuItem 
-                className="flex items-center space-x-2 text-red-600 dark:text-red-400 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
+                className="flex items-center space-x-3 p-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                 onClick={handleLogout}
               >
                 <LogOut className="h-4 w-4" />
-                <span>Sign Out</span>
+                <span className="font-medium">Sign Out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

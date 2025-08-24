@@ -35,31 +35,33 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   
   if (task.type === "food") {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700">
-        <div className="p-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <Utensils className="text-primary h-4 w-4" />
-            <h3 className="font-medium text-gray-800 dark:text-white">Food Order</h3>
+      <div className="glass-card rounded-2xl shadow-xl overflow-hidden border border-white/20 hover:shadow-2xl transition-all duration-300 animate-slide-up">
+        <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-b border-white/20 flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-orange-500 rounded-xl shadow-lg">
+              <Utensils className="text-white h-5 w-5" />
+            </div>
+            <h3 className="font-semibold text-gray-800 dark:text-white text-lg">Food Order</h3>
           </div>
-          <span className={`text-xs py-1 px-2 rounded-full ${
+          <span className={`text-xs font-medium py-2 px-3 rounded-xl shadow-sm ${
             task.status === "pending" 
-              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100"
+              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-300 ring-1 ring-yellow-300"
               : task.status === "confirmed" || task.status === "delivered"
-                ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100"
-                : "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100"
+                ? "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-300 ring-1 ring-green-300"
+                : "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-300 ring-1 ring-red-300"
           }`}>
-            {task.status === "pending" ? "Pending" : 
-             task.status === "confirmed" ? "Confirmed" :
-             task.status === "delivered" ? "Delivered" : "Cancelled"}
+            {task.status === "pending" ? "🕐 Pending" : 
+             task.status === "confirmed" ? "✅ Confirmed" :
+             task.status === "delivered" ? "🚚 Delivered" : "❌ Cancelled"}
           </span>
         </div>
         
-        <div className="p-4">
+        <div className="p-6">
           {task.image && (
             <img 
               src={task.image} 
               alt={`${task.restaurant} food`} 
-              className="w-full h-32 object-cover rounded-lg mb-3"
+              className="w-full h-40 object-cover rounded-xl mb-4 shadow-md ring-1 ring-gray-200 dark:ring-gray-700"
             />
           )}
           
@@ -115,9 +117,9 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
           )}
           
           {paymentError && (
-            <div className="bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 p-2 rounded-lg text-sm mb-3 flex items-center">
-              <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
-              {paymentError}
+            <div className="glass-card border-red-200 dark:border-red-800 bg-red-50/80 dark:bg-red-900/30 text-red-800 dark:text-red-200 p-3 rounded-xl text-sm mb-4 flex items-center animate-fade-in">
+              <AlertCircle className="h-5 w-5 mr-3 text-red-500" />
+              <span className="font-medium">{paymentError}</span>
             </div>
           )}
           
@@ -127,11 +129,12 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                 <p>Would you like to confirm this order?</p>
               </div>
               
-              <div className="flex space-x-2 mt-4">
+              <div className="flex space-x-3 mt-4">
                 <button 
                   onClick={() => handleConfirm(task.id)}
                   disabled={isProcessing}
-                  className="flex-1 bg-primary hover:bg-primary/90 text-white py-2 rounded-lg font-medium flex items-center justify-center"
+                  className="flex-1 gradient-bg hover:shadow-lg text-white py-3 px-4 rounded-xl font-semibold flex items-center justify-center transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  data-testid="button-confirm-food"
                 >
                   {isProcessing ? (
                     <>
@@ -139,15 +142,16 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                       Processing...
                     </>
                   ) : (
-                    "Confirm Order"
+                    "🍽️ Confirm Order"
                   )}
                 </button>
                 <button 
                   onClick={() => cancelTask(task.id)}
                   disabled={isProcessing}
-                  className="flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white py-2 rounded-lg font-medium"
+                  className="flex-1 glass-card hover:shadow-lg text-gray-800 dark:text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  data-testid="button-cancel-food"
                 >
-                  Cancel
+                  ❌ Cancel
                 </button>
               </div>
             </>
