@@ -254,9 +254,13 @@ export function AIAssistantProvider({ children }: { children: ReactNode }) {
         setTasks(prev => [...prev, data.task]);
       }
       
-      // Update wallet if transaction occurred
-      if (data.transaction) {
-        updateWalletBalance(data.transaction.amount);
+      // Update wallet if transaction occurred (use backend balance directly)
+      if (data.transaction && data.wallet) {
+        setWallet(prev => ({
+          ...prev,
+          balance: data.wallet.balance,
+          transactions: data.wallet.transactions
+        }));
       }
     } catch (error) {
       console.error("Error processing message:", error);
