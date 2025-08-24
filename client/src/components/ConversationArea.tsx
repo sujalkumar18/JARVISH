@@ -13,10 +13,12 @@ const ConversationArea: React.FC = () => {
   }, [messages, isTyping]);
   
   const getTasksForMessage = (messageIndex: number): Task[] => {
-    // Show tasks for recent assistant messages (simple approach: show latest tasks for recent messages)
-    const isRecentMessage = messageIndex >= Math.max(0, messages.length - 3);
-    if (isRecentMessage && tasks.length > 0) {
-      // Return the most recent task if this is one of the last few messages
+    // Only show tasks for the LAST assistant message to avoid duplication
+    const message = messages[messageIndex];
+    const isLastMessage = messageIndex === messages.length - 1;
+    
+    if (message.type === "assistant" && isLastMessage && tasks.length > 0) {
+      // Return the most recent task only for the very last assistant message
       return tasks.slice(-1);
     }
     return [];
