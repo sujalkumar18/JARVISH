@@ -43,6 +43,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return req.session.userId || 1; // Fallback for demo purposes
   };
 
+  // Helper function to generate PNR
+  function generatePNR(): string {
+    return Math.floor(1000000000 + Math.random() * 9000000000).toString();
+  }
+
+  // Helper function to generate realistic train options
+  function generateTrainOptions(fromCity: string, toCity: string, date: string, classType: string) {
+    // Indian trains database
+    const indianTrains = [
+      { 
+        number: "12301", name: "Rajdhani Express", 
+        routes: [
+          { from: "New Delhi", to: "Mumbai", departure: "16:55", arrival: "08:35", duration: "15h 40m", distance: "1384 km" },
+          { from: "Delhi", to: "Mumbai", departure: "16:55", arrival: "08:35", duration: "15h 40m", distance: "1384 km" },
+          { from: "Mumbai", to: "Delhi", departure: "17:05", arrival: "09:55", duration: "16h 50m", distance: "1384 km" }
+        ]
+      },
+      { 
+        number: "12002", name: "Shatabdi Express", 
+        routes: [
+          { from: "New Delhi", to: "Chandigarh", departure: "07:20", arrival: "10:45", duration: "3h 25m", distance: "245 km" },
+          { from: "Delhi", to: "Chandigarh", departure: "07:20", arrival: "10:45", duration: "3h 25m", distance: "245 km" },
+          { from: "Chandigarh", to: "Delhi", departure: "18:30", arrival: "21:45", duration: "3h 15m", distance: "245 km" }
+        ]
+      },
+      { 
+        number: "12626", name: "Karnataka Express", 
+        routes: [
+          { from: "New Delhi", to: "Bangalore", departure: "20:15", arrival: "07:15+1", duration: "35h", distance: "2478 km" },
+          { from: "Delhi", to: "Bangalore", departure: "20:15", arrival: "07:15+1", duration: "35h", distance: "2478 km" },
+          { from: "Bangalore", to: "Delhi", departure: "20:30", arrival: "07:30+2", duration: "35h", distance: "2478 km" }
+        ]
+      },
+      { 
+        number: "12951", name: "Mumbai Rajdhani", 
+        routes: [
+          { from: "Mumbai", to: "New Delhi", departure: "17:05", arrival: "09:55+1", duration: "16h 50m", distance: "1384 km" },
+          { from: "Mumbai", to: "Delhi", departure: "17:05", arrival: "09:55+1", duration: "16h 50m", distance: "1384 km" }
+        ]
+      },
+      { 
+        number: "12840", name: "Howrah Mail", 
+        routes: [
+          { from: "Mumbai", to: "Kolkata", departure: "21:05", arrival: "06:10+2", duration: "33h 5m", distance: "1968 km" },
+          { from: "Kolkata", to: "Mumbai", departure: "22:45", arrival: "07:50+2", duration: "33h 5m", distance: "1968 km" }
+        ]
+      }
+    ];
+
+    // International trains
+    const internationalTrains = [
+      { 
+        number: "9443", name: "Eurostar", 
+        routes: [
+          { from: "London", to: "Paris", departure: "08:31", arrival: "11:47", duration: "3h 16m", distance: "492 km" },
+          { from: "Paris", to: "London", departure: "13:13", arrival: "14:39", duration: "3h 26m", distance: "492 km" }
+        ]
+      },
+      { 
+        number: "N700S", name: "Shinkansen Nozomi", 
+        routes: [
+          { from: "Tokyo", to: "Osaka", departure: "09:00", arrival: "11:45", duration: "2h 45m", distance: "515 km" },
+          { from: "Osaka", to: "Tokyo", departure: "15:20", arrival: "18:05", duration: "2h 45m", distance: "515 km" }
+        ]
+      },
+      { 
+        number: "ICE1001", name: "ICE High Speed", 
+        routes: [
+          { from: "Berlin", to: "Munich", departure: "10:29", arrival: "14:28", duration: "3h 59m", distance: "504 km" },
+          { from: "Munich", to: "Berlin", departure: "16:32", arrival: "20:31", duration: "3h 59m", distance: "504 km" }
+        ]
+      },
+      { 
+        number: "TGV2N2", name: "TGV High Speed", 
+        routes: [
+          { from: "Paris", to: "Lyon", departure: "07:03", arrival: "08:58", duration: "1h 55m", distance: "462 km" },
+          { from: "Lyon", to: "Paris", departure: "18:07", arrival: "20:02", duration: "1h 55m", distance: "462 km" }
+        ]
+      }
+    ];
+
+    const allTrains = [...indianTrains, ...internationalTrains];
+    
+    // Find matching routes
+    let matchingRoutes: any[] = [];
+    
+    for (const train of allTrains) {
+      for (const route of train.routes) {
+        const fromMatch = !fromCity || route.from.toLowerCase().includes(fromCity.toLowerCase()) || fromCity.toLowerCase().includes(route.from.toLowerCase());
+        const toMatch = !toCity || route.to.toLowerCase().includes(toCity.toLowerCase()) || toCity.toLowerCase().includes(route.to.toLowerCase());
+        
+        if (fromMatch && toMatch) {
+          matchingRoutes.push({
+            trainNumber: train.number,
+            trainName: train.name,
+            ...route
+          });
+        }
+      }
+    }
+    
+    // If no specific route found, provide default options
+    if (matchingRoutes.length === 0) {
+      matchingRoutes = [
+        {
+          trainNumber: "12345",
+          trainName: "Express Special",
+          from: fromCity || "Mumbai",
+          to: toCity || "Delhi", 
+          departure: "15:30",
+          arrival: "08:45+1",
+          duration: "17h 15m",
+          distance: "1200 km"
+        },
+        {
+          trainNumber: "54321", 
+          trainName: "Superfast Express",
+          from: fromCity || "Delhi",
+          to: toCity || "Bangalore",
+          departure: "20:15",
+          arrival: "06:30+1", 
+          duration: "10h 15m",
+          distance: "800 km"
+        }
+      ];
+    }
+    
+    // Add pricing and availability based on class
+    const classPricing: { [key: string]: { base: number, multiplier: number } } = {
+      "general": { base: 50, multiplier: 0.5 },
+      "sleeper": { base: 200, multiplier: 1 },
+      "3ac": { base: 800, multiplier: 2.5 },
+      "2ac": { base: 1200, multiplier: 3.5 },
+      "1ac": { base: 2000, multiplier: 5 }
+    };
+    
+    return matchingRoutes.map(route => {
+      const pricing = classPricing[classType] || classPricing.sleeper;
+      const basePrice = pricing.base + (Math.random() * 200);
+      const distanceMultiplier = parseInt(route.distance) / 1000;
+      
+      return {
+        ...route,
+        price: Math.round(basePrice * pricing.multiplier * distanceMultiplier),
+        availableSeats: Math.floor(20 + Math.random() * 50),
+        coach: `${classType.toUpperCase()}${Math.floor(1 + Math.random() * 8)}`,
+        seatNumbers: Array.from({length: 2}, (_, i) => Math.floor(1 + Math.random() * 72)),
+        platform: Math.floor(1 + Math.random() * 12)
+      };
+    });
+  }
+
   // ==== Authentication Routes ====
   
   // Sign up
@@ -540,6 +692,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
             serviceFee: 3.00,
             total: 28.00,
             image: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250"
+          }
+        });
+      }
+      // Train ticket booking
+      else if (userInput.includes("book") && (userInput.includes("train") || userInput.includes("ticket") || 
+          userInput.includes("railway") || userInput.includes("irctc") || userInput.includes("travel"))) {
+        
+        // Extract journey details
+        let fromCity = "";
+        let toCity = "";
+        let travelDate = "";
+        let classType = "sleeper";
+        
+        // Try to extract cities
+        const cityPattern = /from\s+(\w+(?:\s+\w+)*?)(?:\s+to\s+(\w+(?:\s+\w+)*?))?/i;
+        const cityMatch = userInput.match(cityPattern);
+        if (cityMatch) {
+          fromCity = cityMatch[1];
+          toCity = cityMatch[2] || "";
+        }
+        
+        // Extract class
+        if (userInput.includes("ac") || userInput.includes("air conditioning")) classType = "3ac";
+        if (userInput.includes("sleeper")) classType = "sleeper";
+        if (userInput.includes("general")) classType = "general";
+        if (userInput.includes("first") || userInput.includes("1st")) classType = "1ac";
+        if (userInput.includes("second") || userInput.includes("2nd")) classType = "2ac";
+        
+        // Extract date
+        if (userInput.includes("today")) {
+          travelDate = new Date().toISOString().split('T')[0];
+        } else if (userInput.includes("tomorrow")) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          travelDate = tomorrow.toISOString().split('T')[0];
+        } else {
+          // Default to tomorrow
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          travelDate = tomorrow.toISOString().split('T')[0];
+        }
+        
+        // Generate realistic train options
+        const trainOptions = generateTrainOptions(fromCity, toCity, travelDate, classType);
+        const selectedTrain = trainOptions[0]; // Pick first option
+        
+        responseMessage = `I found a great train for your journey! Here are the details:`;
+        
+        task = await storage.createTask({
+          userId,
+          type: "train",
+          status: "pending",
+          data: {
+            id: `train-${randomUUID()}`,
+            type: "train",
+            status: "pending",
+            trainNumber: selectedTrain.trainNumber,
+            trainName: selectedTrain.trainName,
+            from: selectedTrain.from,
+            to: selectedTrain.to,
+            date: travelDate,
+            departure: selectedTrain.departure,
+            arrival: selectedTrain.arrival,
+            duration: selectedTrain.duration,
+            classType: classType.toUpperCase(),
+            price: selectedTrain.price,
+            seats: selectedTrain.availableSeats,
+            pnr: generatePNR(),
+            coach: selectedTrain.coach,
+            seatNumbers: selectedTrain.seatNumbers,
+            platform: selectedTrain.platform,
+            distance: selectedTrain.distance
           }
         });
       }
@@ -1230,6 +1454,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Add order number
         (targetTask.data as any).orderNumber = `PZ${Math.floor(10000 + Math.random() * 90000)}`;
+      } else if (targetTask.type === 'train') {
+        newStatus = 'confirmed';
+        responseMessage = `Your train ticket for ${(targetTask.data as any).trainName} from ${(targetTask.data as any).from} to ${(targetTask.data as any).to} has been confirmed. PNR: ${(targetTask.data as any).pnr}`;
+        
+        // No changes needed to task data as PNR and other details are already set
       } else if (targetTask.type === 'ticket') {
         newStatus = 'confirmed';
         responseMessage = `Your tickets for ${(targetTask.data as any).options.movie} at ${(targetTask.data as any).venue} have been booked for ${(targetTask.data as any).options.time}.`;
@@ -1315,6 +1544,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let responseMessage = '';
       if (targetTask.type === 'food') {
         responseMessage = `Your food order from ${(targetTask.data as any).restaurant} has been cancelled.`;
+      } else if (targetTask.type === 'train') {
+        responseMessage = `Your train booking for ${(targetTask.data as any).trainName} from ${(targetTask.data as any).from} to ${(targetTask.data as any).to} has been cancelled.`;
       } else if (targetTask.type === 'ticket') {
         responseMessage = `Your ticket booking for ${(targetTask.data as any).options.movie} has been cancelled.`;
       }

@@ -47,6 +47,28 @@ export interface TicketTask {
   image: string;
 }
 
+export interface TrainTask {
+  id: string;
+  type: "train";
+  status: "pending" | "confirmed" | "cancelled" | "boarding";
+  trainNumber: string;
+  trainName: string;
+  from: string;
+  to: string;
+  date: string;
+  departure: string;
+  arrival: string;
+  duration: string;
+  classType: string;
+  price: number;
+  seats: number;
+  pnr?: string;
+  coach?: string;
+  seatNumbers?: number[];
+  platform?: number;
+  distance: string;
+}
+
 export interface NewsTask {
   id: string;
   type: "news";
@@ -137,7 +159,7 @@ export interface WikipediaTask {
   searchTerm: string;
 }
 
-export type Task = FoodOrderTask | TicketTask | NewsTask | DictionaryTask | WeatherTask | CurrencyTask | EntertainmentTask | WikipediaTask;
+export type Task = FoodOrderTask | TicketTask | TrainTask | NewsTask | DictionaryTask | WeatherTask | CurrencyTask | EntertainmentTask | WikipediaTask;
 
 export interface WalletState {
   balance: number;

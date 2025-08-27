@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { useAIAssistant, FoodOrderTask, TicketTask, NewsTask, DictionaryTask, WeatherTask, CurrencyTask, EntertainmentTask, WikipediaTask } from "@/context/AIAssistantContext";
-import { Check, Utensils, Ticket, Clock, MapPin, Star, Zap, AlertCircle } from "lucide-react";
+import { useAIAssistant, FoodOrderTask, TicketTask, NewsTask, DictionaryTask, WeatherTask, CurrencyTask, EntertainmentTask, WikipediaTask, TrainTask } from "@/context/AIAssistantContext";
+import { Check, Utensils, Ticket, Clock, MapPin, Star, Zap, AlertCircle, Train, ArrowRight, CreditCard } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import NewsCard from "./NewsCard";
 import { DictionaryCard } from "./DictionaryCard";
@@ -10,7 +10,7 @@ import { EntertainmentCard } from "./EntertainmentCard";
 import { WikipediaCard } from "./WikipediaCard";
 
 interface TaskCardProps {
-  task: FoodOrderTask | TicketTask | NewsTask | DictionaryTask | WeatherTask | CurrencyTask | EntertainmentTask | WikipediaTask;
+  task: FoodOrderTask | TicketTask | NewsTask | DictionaryTask | WeatherTask | CurrencyTask | EntertainmentTask | WikipediaTask | TrainTask;
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
@@ -32,6 +32,175 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
       setIsProcessing(false);
     }
   };
+  
+  if (task.type === "train") {
+    return (
+      <div className="glass-card rounded-2xl shadow-xl overflow-hidden border border-white/20 hover:shadow-2xl transition-all duration-300 animate-slide-up">
+        <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-b border-white/20 flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-blue-500 rounded-xl shadow-lg">
+              <Train className="text-white h-5 w-5" />
+            </div>
+            <h3 className="font-semibold text-gray-800 dark:text-white text-lg">Train Ticket</h3>
+          </div>
+          <span className={`text-xs font-medium py-2 px-3 rounded-xl shadow-sm ${
+            task.status === "pending" 
+              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-300 ring-1 ring-yellow-300"
+              : task.status === "confirmed" || task.status === "boarding"
+                ? "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-300 ring-1 ring-green-300"
+                : "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-300 ring-1 ring-red-300"
+          }`}>
+            {task.status === "pending" ? "🕐 Pending" : 
+             task.status === "confirmed" ? "✅ Confirmed" :
+             task.status === "boarding" ? "🚂 Boarding" : "❌ Cancelled"}
+          </span>
+        </div>
+        
+        <div className="p-4">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center space-x-2">
+              <div className="flex flex-col items-center text-center">
+                <span className="text-lg font-bold text-gray-900 dark:text-white">{task.from}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{task.departure}</span>
+              </div>
+              <div className="flex flex-col items-center mx-4">
+                <ArrowRight className="text-blue-500 h-5 w-5" />
+                <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{task.duration}</span>
+              </div>
+              <div className="flex flex-col items-center text-center">
+                <span className="text-lg font-bold text-gray-900 dark:text-white">{task.to}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{task.arrival}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3 mb-4">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">Train:</span>
+                <p className="font-semibold text-gray-900 dark:text-white">{task.trainNumber} - {task.trainName}</p>
+              </div>
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">Class:</span>
+                <p className="font-semibold text-gray-900 dark:text-white">{task.classType}</p>
+              </div>
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">Date:</span>
+                <p className="font-semibold text-gray-900 dark:text-white">{task.date}</p>
+              </div>
+              <div>
+                <span className="text-gray-500 dark:text-gray-400">Distance:</span>
+                <p className="font-semibold text-gray-900 dark:text-white">{task.distance}</p>
+              </div>
+            </div>
+            
+            {task.status === "confirmed" && task.pnr && (
+              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">PNR:</span>
+                    <p className="font-bold text-blue-600 dark:text-blue-400">{task.pnr}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">Coach:</span>
+                    <p className="font-semibold text-gray-900 dark:text-white">{task.coach}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">Platform:</span>
+                    <p className="font-semibold text-gray-900 dark:text-white">{task.platform}</p>
+                  </div>
+                </div>
+                {task.seatNumbers && task.seatNumbers.length > 0 && (
+                  <div className="mt-2">
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">Seats:</span>
+                    <p className="font-semibold text-gray-900 dark:text-white">{task.seatNumbers.join(", ")}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-lg font-bold text-gray-900 dark:text-white">₹{task.price}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{task.seats} seats available</span>
+          </div>
+          
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Wallet balance:</span>
+            <span className={`font-medium ${wallet.balance < task.price ? "text-red-500" : "text-green-500"}`}>
+              ₹{wallet.balance.toFixed(2)}
+            </span>
+          </div>
+          
+          {wallet.balance < task.price && settings.autoPayment && (
+            <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 p-2 rounded-lg text-sm mb-3 flex items-center">
+              <Zap className="h-4 w-4 mr-2 text-blue-500" />
+              Auto top-up will be applied to complete this payment
+            </div>
+          )}
+          
+          {paymentError && (
+            <div className="glass-card border-red-200 dark:border-red-800 bg-red-50/80 dark:bg-red-900/30 text-red-800 dark:text-red-200 p-3 rounded-xl text-sm mb-4 flex items-center animate-fade-in">
+              <AlertCircle className="h-5 w-5 mr-3 text-red-500" />
+              <span className="font-medium">{paymentError}</span>
+            </div>
+          )}
+          
+          {task.status === "pending" && (
+            <>
+              <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+                <p>Would you like to confirm this train booking?</p>
+              </div>
+              
+              <div className="flex space-x-3 mt-4">
+                <button 
+                  onClick={() => handleConfirm(task.id)}
+                  disabled={isProcessing}
+                  className="flex-1 gradient-bg hover:shadow-lg text-white py-2 px-3 rounded-xl font-semibold flex items-center justify-center transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  data-testid="button-confirm-train"
+                >
+                  {isProcessing ? (
+                    <>
+                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Book Ticket
+                    </>
+                  )}
+                </button>
+                <button 
+                  onClick={() => cancelTask(task.id)}
+                  disabled={isProcessing}
+                  className="flex-1 glass-card hover:shadow-lg text-gray-800 dark:text-white py-2 px-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  data-testid="button-cancel-train"
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          )}
+          
+          {task.status === "confirmed" && (
+            <div className="bg-green-50 dark:bg-green-900/30 rounded-xl p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center">
+                  <Check className="text-green-500 h-5 w-5 mr-2" />
+                  <span className="font-semibold text-green-800 dark:text-green-200">Ticket Booked Successfully!</span>
+                </div>
+                <span className="text-sm font-medium text-green-600 dark:text-green-300">₹{task.price}</span>
+              </div>
+              <p className="text-sm text-green-700 dark:text-green-300">
+                Your e-ticket has been sent to your registered email. Please arrive at the station 30 minutes before departure.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
   
   if (task.type === "food") {
     return (
