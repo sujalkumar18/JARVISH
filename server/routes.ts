@@ -667,37 +667,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           responseMessage = "I don't see any pending food orders to confirm.";
         }
       }
-      // Movie tickets (avoid conflicts with news requests)
-      else if ((userInput.includes("movie") || userInput.includes("ticket") || userInput.includes("cinema") || 
-               userInput.includes("film")) && !userInput.includes("news")) {
-        
-        responseMessage = "I'd be happy to book movie tickets for you tonight. Here are some movies playing nearby:";
-        
-        // Create a ticket booking task
-        task = await storage.createTask({
-          userId,
-          type: "ticket",
-          status: "select",
-          data: {
-            id: `ticket-${randomUUID()}`,
-            type: "ticket",
-            status: "select",
-            venue: "AMC Theaters",
-            options: {
-              movie: "Avengers: Endgame",
-              time: "8:00 PM",
-              tickets: 2
-            },
-            ticketPrice: 12.50,
-            serviceFee: 3.00,
-            total: 28.00,
-            image: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250"
-          }
-        });
-      }
-      // Train ticket booking
-      else if (userInput.includes("book") && (userInput.includes("train") || userInput.includes("ticket") || 
-          userInput.includes("railway") || userInput.includes("irctc") || userInput.includes("travel"))) {
+      // Train ticket booking (check this before movie tickets to avoid conflicts)
+      else if ((userInput.includes("train") || userInput.includes("railway") || userInput.includes("irctc")) || 
+               ((userInput.includes("ticket") || userInput.includes("travel")) && 
+                (userInput.includes("delhi") || userInput.includes("mumbai") || userInput.includes("bangalore") || 
+                 userInput.includes("chennai") || userInput.includes("kolkata") || userInput.includes("hyderabad") ||
+                 userInput.includes("from") || userInput.includes("to")))) {
         
         // Extract journey details
         let fromCity = "";
@@ -705,12 +680,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let travelDate = "";
         let classType = "sleeper";
         
-        // Try to extract cities
+        // Try to extract cities with improved patterns
         const cityPattern = /from\s+(\w+(?:\s+\w+)*?)(?:\s+to\s+(\w+(?:\s+\w+)*?))?/i;
-        const cityMatch = userInput.match(cityPattern);
-        if (cityMatch) {
+        const simpleCityPattern = /(\w+)\s+to\s+(\w+)/i;
+        
+        let cityMatch = userInput.match(cityPattern);
+        if (!cityMatch) {
+          cityMatch = userInput.match(simpleCityPattern);
+          if (cityMatch) {
+            fromCity = cityMatch[1];
+            toCity = cityMatch[2];
+          }
+        } else {
           fromCity = cityMatch[1];
           toCity = cityMatch[2] || "";
+        }
+        
+        // If we still don't have cities, try to detect common city names
+        if (!fromCity || !toCity) {
+          const cities = ["delhi", "mumbai", "bangalore", "chennai", "kolkata", "hyderabad", "pune", "ahmedabad"];
+          const foundCities = cities.filter(city => userInput.toLowerCase().includes(city));
+          if (foundCities.length >= 2) {
+            fromCity = foundCities[0];
+            toCity = foundCities[1];
+          } else if (foundCities.length === 1) {
+            if (userInput.toLowerCase().includes("delhi")) {
+              fromCity = "Delhi";
+              toCity = "Mumbai"; // default destination
+            } else if (userInput.toLowerCase().includes("mumbai")) {
+              fromCity = "Mumbai";
+              toCity = "Delhi"; // default destination
+            }
+          }
         }
         
         // Extract class
@@ -764,6 +765,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
             seatNumbers: selectedTrain.seatNumbers,
             platform: selectedTrain.platform,
             distance: selectedTrain.distance
+          }
+        });
+      }
+      // Movie tickets (avoid conflicts with news requests and train tickets)
+      else if ((userInput.includes("movie") || userInput.includes("cinema") || userInput.includes("film")) || 
+               (userInput.includes("ticket") && !userInput.includes("train") && !userInput.includes("railway") && 
+                !userInput.includes("delhi") && !userInput.includes("mumbai") && !userInput.includes("from") && !userInput.includes("to"))) {
+        
+        responseMessage = "I'd be happy to book movie tickets for you tonight. Here are some movies playing nearby:";
+        
+        // Create a ticket booking task
+        task = await storage.createTask({
+          userId,
+          type: "ticket",
+          status: "select",
+          data: {
+            id: `ticket-${randomUUID()}`,
+            type: "ticket",
+            status: "select",
+            venue: "AMC Theaters",
+            options: {
+              movie: "Avengers: Endgame",
+              time: "8:00 PM",
+              tickets: 2
+            },
+            ticketPrice: 12.50,
+            serviceFee: 3.00,
+            total: 28.00,
+            image: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250"
           }
         });
       }
