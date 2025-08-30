@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, VolumeX, ExternalLink, Music, Video } from "lucide-react";
 
 interface YouTubeVideo {
@@ -25,15 +25,19 @@ export const YouTubeCard: React.FC<YouTubeCardProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isAudioOnly, setIsAudioOnly] = useState(true); // Default to audio-only to avoid embedding restrictions
   const [isMuted, setIsMuted] = useState(false);
+  const [embedError, setEmbedError] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const handlePlay = () => {
     setIsPlaying(!isPlaying);
+    
+    // Send message to iframe to play/pause
+    if (iframeRef.current) {
+      const message = isPlaying ? '{"event":"command","func":"pauseVideo","args":""}' : '{"event":"command","func":"playVideo","args":""}';
+      iframeRef.current.contentWindow?.postMessage(message, 'https://www.youtube.com');
+    }
   };
 
-  const handleVideoSelect = (video: YouTubeVideo) => {
-    setCurrentVideo(video);
-    setIsPlaying(false);
-  };
 
   const toggleAudioMode = () => {
     setIsAudioOnly(!isAudioOnly);
@@ -41,19 +45,37 @@ export const YouTubeCard: React.FC<YouTubeCardProps> = ({
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
+    
+    // Send message to iframe to mute/unmute
+    if (iframeRef.current) {
+      const message = isMuted ? '{"event":"command","func":"unMute","args":""}' : '{"event":"command","func":"mute","args":""}';
+      iframeRef.current.contentWindow?.postMessage(message, 'https://www.youtube.com');
+    }
   };
 
   const getYouTubeEmbedUrl = (videoId: string) => {
     const baseUrl = `https://www.youtube.com/embed/${videoId}`;
     const params = new URLSearchParams({
-      autoplay: isPlaying ? '1' : '0',
+      autoplay: '0', // Don't autoplay initially
       mute: isMuted ? '1' : '0',
       controls: '1',
       rel: '0',
       modestbranding: '1',
-      iv_load_policy: '3'
+      iv_load_policy: '3',
+      enablejsapi: '1', // Enable JavaScript API
+      origin: window.location.origin
     });
     return `${baseUrl}?${params.toString()}`;
+  };
+
+  const handleVideoSelect = (video: YouTubeVideo) => {
+    setCurrentVideo(video);
+    setIsPlaying(false);
+    setEmbedError(false);
+  };
+
+  const handleIframeError = () => {
+    setEmbedError(true);
   };
 
   return (
@@ -89,34 +111,82 @@ export const YouTubeCard: React.FC<YouTubeCardProps> = ({
         <div className="mb-4">
           <div className="bg-gray-900 rounded-xl overflow-hidden shadow-lg">
             {isAudioOnly ? (
-              // Audio-only mode
-              <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-purple-900 to-blue-900 relative">
-                <div className="text-center">
-                  <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-4 mx-auto backdrop-blur-sm border border-white/20">
-                    <Music className="h-12 w-12 text-white" />
-                  </div>
-                  <h3 className="text-white font-semibold text-lg mb-2 line-clamp-2 px-4">{currentVideo.title}</h3>
-                  <p className="text-white/80 text-sm mb-4">{currentVideo.channelTitle}</p>
-                  
-                  {/* Direct link to YouTube */}
-                  <a
-                    href={`https://www.youtube.com/watch?v=${currentVideo.videoId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full font-medium transition-all duration-200 transform hover:scale-105"
-                    data-testid="button-play-on-youtube"
-                  >
-                    <Play className="h-5 w-5" />
-                    <span>Play on YouTube</span>
-                  </a>
-                </div>
+              // Audio-only mode with embedded player
+              <div className="relative">
+                {/* Hidden iframe for audio playback */}
+                {!embedError ? (
+                  <iframe
+                    ref={iframeRef}
+                    src={getYouTubeEmbedUrl(currentVideo.videoId)}
+                    title={currentVideo.title}
+                    className="w-full h-1 opacity-0 pointer-events-none absolute"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    onError={handleIframeError}
+                    data-testid="youtube-audio-player"
+                  />
+                ) : null}
                 
-                {/* Info overlay */}
-                <div className="absolute top-4 left-4 right-4">
-                  <div className="bg-black/30 backdrop-blur-sm rounded-lg p-3 text-center">
-                    <p className="text-white/90 text-sm">
-                      🎵 Many music videos can't be embedded. Click "Play on YouTube" to listen!
-                    </p>
+                {/* Audio interface */}
+                <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-purple-900 to-blue-900 relative">
+                  <div className="text-center">
+                    <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-4 mx-auto backdrop-blur-sm border border-white/20">
+                      <Music className="h-12 w-12 text-white" />
+                    </div>
+                    <h3 className="text-white font-semibold text-lg mb-2 line-clamp-2 px-4">{currentVideo.title}</h3>
+                    <p className="text-white/80 text-sm mb-4">{currentVideo.channelTitle}</p>
+                    
+                    {/* Audio controls */}
+                    <div className="flex items-center justify-center space-x-4 mb-4">
+                      <button
+                        onClick={handlePlay}
+                        className="w-16 h-16 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 transition-all duration-200 transform hover:scale-105"
+                        data-testid="button-play-pause-audio"
+                      >
+                        {isPlaying ? (
+                          <Pause className="h-8 w-8 text-white" />
+                        ) : (
+                          <Play className="h-8 w-8 text-white ml-1" />
+                        )}
+                      </button>
+                      <button
+                        onClick={toggleMute}
+                        className="w-12 h-12 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 transition-all duration-200"
+                        data-testid="button-toggle-mute-audio"
+                      >
+                        {isMuted ? (
+                          <VolumeX className="h-6 w-6 text-white" />
+                        ) : (
+                          <Volume2 className="h-6 w-6 text-white" />
+                        )}
+                      </button>
+                    </div>
+                    
+                    {embedError && (
+                      <div className="mb-4">
+                        <p className="text-yellow-300 text-sm mb-2">⚠️ This video can't be embedded</p>
+                        <a
+                          href={`https://www.youtube.com/watch?v=${currentVideo.videoId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full font-medium transition-all duration-200 transform hover:scale-105"
+                          data-testid="button-play-on-youtube-fallback"
+                        >
+                          <ExternalLink className="h-5 w-5" />
+                          <span>Play on YouTube</span>
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Status indicator */}
+                  <div className="absolute top-4 right-4">
+                    <div className="bg-black/40 backdrop-blur-sm rounded-full px-3 py-1">
+                      <span className="text-white/90 text-xs font-medium">
+                        {isPlaying ? "🎵 Playing" : "⏸️ Paused"}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -197,8 +267,8 @@ export const YouTubeCard: React.FC<YouTubeCardProps> = ({
         {/* Instructions */}
         <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl">
           <p className="text-sm text-blue-800 dark:text-blue-200">
-            🎵 Music is set to audio-only mode by default since many videos are restricted from embedding. 
-            Click "Play on YouTube" to listen to the full song on YouTube!
+            🎵 Music plays directly in the app! Use the play button to start listening. 
+            If a song can't be embedded, you'll see a YouTube link instead.
           </p>
         </div>
       </div>
