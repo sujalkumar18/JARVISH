@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Play, Pause, Volume2, VolumeX, ExternalLink, Music, Video } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, ExternalLink, Music, Video, SkipBack, SkipForward, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface YouTubeVideo {
   videoId: string;
@@ -22,6 +22,7 @@ export const YouTubeCard: React.FC<YouTubeCardProps> = ({
   selectedVideo 
 }) => {
   const [currentVideo, setCurrentVideo] = useState(selectedVideo);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isAudioOnly, setIsAudioOnly] = useState(true); // Default to audio-only to avoid embedding restrictions
   const [isMuted, setIsMuted] = useState(false);
@@ -53,6 +54,26 @@ export const YouTubeCard: React.FC<YouTubeCardProps> = ({
     }
   };
 
+  const goToPrevious = () => {
+    if (currentIndex > 0) {
+      const newIndex = currentIndex - 1;
+      setCurrentIndex(newIndex);
+      setCurrentVideo(videos[newIndex]);
+      setIsPlaying(false);
+      setEmbedError(false);
+    }
+  };
+
+  const goToNext = () => {
+    if (currentIndex < videos.length - 1) {
+      const newIndex = currentIndex + 1;
+      setCurrentIndex(newIndex);
+      setCurrentVideo(videos[newIndex]);
+      setIsPlaying(false);
+      setEmbedError(false);
+    }
+  };
+
   const getYouTubeEmbedUrl = (videoId: string) => {
     const baseUrl = `https://www.youtube.com/embed/${videoId}`;
     const params = new URLSearchParams({
@@ -68,8 +89,9 @@ export const YouTubeCard: React.FC<YouTubeCardProps> = ({
     return `${baseUrl}?${params.toString()}`;
   };
 
-  const handleVideoSelect = (video: YouTubeVideo) => {
+  const handleVideoSelect = (video: YouTubeVideo, index: number) => {
     setCurrentVideo(video);
+    setCurrentIndex(index);
     setIsPlaying(false);
     setEmbedError(false);
   };
@@ -140,6 +162,15 @@ export const YouTubeCard: React.FC<YouTubeCardProps> = ({
                     {/* Audio controls */}
                     <div className="flex items-center justify-center space-x-4 mb-4">
                       <button
+                        onClick={goToPrevious}
+                        disabled={currentIndex === 0}
+                        className="w-12 h-12 bg-white/20 hover:bg-white/30 disabled:bg-white/10 disabled:cursor-not-allowed rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 transition-all duration-200"
+                        data-testid="button-previous-song"
+                      >
+                        <SkipBack className="h-6 w-6 text-white" />
+                      </button>
+                      
+                      <button
                         onClick={handlePlay}
                         className="w-16 h-16 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 transition-all duration-200 transform hover:scale-105"
                         data-testid="button-play-pause-audio"
@@ -150,6 +181,16 @@ export const YouTubeCard: React.FC<YouTubeCardProps> = ({
                           <Play className="h-8 w-8 text-white ml-1" />
                         )}
                       </button>
+                      
+                      <button
+                        onClick={goToNext}
+                        disabled={currentIndex === videos.length - 1}
+                        className="w-12 h-12 bg-white/20 hover:bg-white/30 disabled:bg-white/10 disabled:cursor-not-allowed rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 transition-all duration-200"
+                        data-testid="button-next-song"
+                      >
+                        <SkipForward className="h-6 w-6 text-white" />
+                      </button>
+                      
                       <button
                         onClick={toggleMute}
                         className="w-12 h-12 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 transition-all duration-200"
@@ -161,6 +202,11 @@ export const YouTubeCard: React.FC<YouTubeCardProps> = ({
                           <Volume2 className="h-6 w-6 text-white" />
                         )}
                       </button>
+                    </div>
+                    
+                    {/* Song counter */}
+                    <div className="text-white/70 text-sm">
+                      {currentIndex + 1} of {videos.length} songs
                     </div>
                     
                     {embedError && (
@@ -232,34 +278,87 @@ export const YouTubeCard: React.FC<YouTubeCardProps> = ({
           </div>
         </div>
 
-        {/* Video Options */}
+        {/* Scrollable Song List */}
         {videos.length > 1 && (
           <div>
-            <h5 className="font-medium text-gray-800 dark:text-white mb-3">Other Results:</h5>
-            <div className="space-y-2">
-              {videos.filter(video => video.videoId !== currentVideo.videoId).map((video) => (
-                <div
-                  key={video.videoId}
-                  onClick={() => handleVideoSelect(video)}
-                  className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
-                  data-testid={`video-option-${video.videoId}`}
+            <div className="flex items-center justify-between mb-3">
+              <h5 className="font-medium text-gray-800 dark:text-white">All Songs ({videos.length}):</h5>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={goToPrevious}
+                  disabled={currentIndex === 0}
+                  className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+                  data-testid="button-scroll-prev"
                 >
-                  <img
-                    src={video.thumbnail}
-                    alt={video.title}
-                    className="w-16 h-12 object-cover rounded-lg"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h6 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-2">
-                      {video.title}
-                    </h6>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {video.channelTitle}
-                    </p>
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={goToNext}
+                  disabled={currentIndex === videos.length - 1}
+                  className="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+                  data-testid="button-scroll-next"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Scrollable horizontal list */}
+            <div className="overflow-x-auto">
+              <div className="flex space-x-3 pb-2" style={{ width: `${videos.length * 280}px` }}>
+                {videos.map((video, index) => (
+                  <div
+                    key={video.videoId}
+                    onClick={() => handleVideoSelect(video, index)}
+                    className={`flex-shrink-0 w-64 p-3 rounded-xl cursor-pointer transition-all duration-200 ${
+                      video.videoId === currentVideo.videoId 
+                        ? "bg-blue-100 dark:bg-blue-900/50 ring-2 ring-blue-500 transform scale-105" 
+                        : "bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                    }`}
+                    data-testid={`song-option-${index}`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="relative">
+                        <img
+                          src={video.thumbnail}
+                          alt={video.title}
+                          className="w-16 h-12 object-cover rounded-lg"
+                        />
+                        {video.videoId === currentVideo.videoId && (
+                          <div className="absolute inset-0 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                            <Music className="h-4 w-4 text-blue-600" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h6 className="font-medium text-gray-900 dark:text-white text-sm line-clamp-2">
+                          {video.title}
+                        </h6>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {video.channelTitle}
+                        </p>
+                        <div className="flex items-center mt-1">
+                          <span className="text-xs text-gray-400 dark:text-gray-500">
+                            #{index + 1}
+                          </span>
+                          {video.videoId === currentVideo.videoId && (
+                            <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
+                              ▶ Now Playing
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <Play className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
+            
+            {/* Navigation hint */}
+            <div className="mt-2 text-center">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                ← Scroll or use arrow buttons to browse {videos.length} songs →
+              </p>
             </div>
           </div>
         )}

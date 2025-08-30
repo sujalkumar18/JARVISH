@@ -364,8 +364,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (!searchQuery) {
               responseMessage = "Please tell me what song you'd like to play. For example: 'Play Arijit Singh song' or 'Play No love song by Subh'";
             } else {
-              // Search YouTube for the song
-              const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=3&q=${encodeURIComponent(searchQuery + " song")}&type=video&videoCategoryId=10&key=${YOUTUBE_API_KEY}`;
+              // Search YouTube for the song (get more results for scrolling)
+              const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=15&q=${encodeURIComponent(searchQuery + " song")}&type=video&videoCategoryId=10&key=${YOUTUBE_API_KEY}`;
               const response = await fetch(searchUrl);
               const data = await response.json();
               
