@@ -23,7 +23,7 @@ export const YouTubeCard: React.FC<YouTubeCardProps> = ({
 }) => {
   const [currentVideo, setCurrentVideo] = useState(selectedVideo);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isAudioOnly, setIsAudioOnly] = useState(false);
+  const [isAudioOnly, setIsAudioOnly] = useState(true); // Default to audio-only to avoid embedding restrictions
   const [isMuted, setIsMuted] = useState(false);
 
   const handlePlay = () => {
@@ -95,33 +95,29 @@ export const YouTubeCard: React.FC<YouTubeCardProps> = ({
                   <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-4 mx-auto backdrop-blur-sm border border-white/20">
                     <Music className="h-12 w-12 text-white" />
                   </div>
-                  <h3 className="text-white font-semibold text-lg mb-2">{currentVideo.title}</h3>
-                  <p className="text-white/80 text-sm">{currentVideo.channelTitle}</p>
+                  <h3 className="text-white font-semibold text-lg mb-2 line-clamp-2 px-4">{currentVideo.title}</h3>
+                  <p className="text-white/80 text-sm mb-4">{currentVideo.channelTitle}</p>
+                  
+                  {/* Direct link to YouTube */}
+                  <a
+                    href={`https://www.youtube.com/watch?v=${currentVideo.videoId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full font-medium transition-all duration-200 transform hover:scale-105"
+                    data-testid="button-play-on-youtube"
+                  >
+                    <Play className="h-5 w-5" />
+                    <span>Play on YouTube</span>
+                  </a>
                 </div>
-                {/* Audio controls overlay */}
-                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                  <button
-                    onClick={handlePlay}
-                    className="w-12 h-12 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 transition-all duration-200"
-                    data-testid="button-play-pause"
-                  >
-                    {isPlaying ? (
-                      <Pause className="h-6 w-6 text-white" />
-                    ) : (
-                      <Play className="h-6 w-6 text-white ml-1" />
-                    )}
-                  </button>
-                  <button
-                    onClick={toggleMute}
-                    className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30 transition-all duration-200"
-                    data-testid="button-toggle-mute"
-                  >
-                    {isMuted ? (
-                      <VolumeX className="h-5 w-5 text-white" />
-                    ) : (
-                      <Volume2 className="h-5 w-5 text-white" />
-                    )}
-                  </button>
+                
+                {/* Info overlay */}
+                <div className="absolute top-4 left-4 right-4">
+                  <div className="bg-black/30 backdrop-blur-sm rounded-lg p-3 text-center">
+                    <p className="text-white/90 text-sm">
+                      🎵 Many music videos can't be embedded. Click "Play on YouTube" to listen!
+                    </p>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -201,8 +197,8 @@ export const YouTubeCard: React.FC<YouTubeCardProps> = ({
         {/* Instructions */}
         <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl">
           <p className="text-sm text-blue-800 dark:text-blue-200">
-            🎵 You can switch between video and audio-only modes using the button above. 
-            In audio mode, enjoy the music without video distractions!
+            🎵 Music is set to audio-only mode by default since many videos are restricted from embedding. 
+            Click "Play on YouTube" to listen to the full song on YouTube!
           </p>
         </div>
       </div>
