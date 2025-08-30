@@ -159,7 +159,30 @@ export interface WikipediaTask {
   searchTerm: string;
 }
 
-export type Task = FoodOrderTask | TicketTask | TrainTask | NewsTask | DictionaryTask | WeatherTask | CurrencyTask | EntertainmentTask | WikipediaTask;
+export interface YouTubeTask {
+  id: string;
+  type: "youtube";
+  status: "display";
+  searchQuery: string;
+  videos: {
+    videoId: string;
+    title: string;
+    description: string;
+    thumbnail: string;
+    channelTitle: string;
+    publishedAt: string;
+  }[];
+  selectedVideo: {
+    videoId: string;
+    title: string;
+    description: string;
+    thumbnail: string;
+    channelTitle: string;
+    publishedAt: string;
+  };
+}
+
+export type Task = FoodOrderTask | TicketTask | TrainTask | NewsTask | DictionaryTask | WeatherTask | CurrencyTask | EntertainmentTask | WikipediaTask | YouTubeTask;
 
 export interface WalletState {
   balance: number;

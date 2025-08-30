@@ -336,8 +336,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let task = null;
       let transaction = null;
       
+      // YouTube Music requests (check this first to catch music-related requests)
+      if (userInput.includes("play") && (userInput.includes("song") || userInput.includes("music") || 
+          userInput.includes("video") || userInput.includes("youtube") || 
+          userInput.includes("arijit") || userInput.includes("subh") || userInput.includes("audio"))) {
+        
+        try {
+          const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+          if (!YOUTUBE_API_KEY) {
+            responseMessage = "I'd love to play music for you, but the YouTube service isn't configured yet.";
+          } else {
+            // Extract search query
+            let searchQuery = "";
+            
+            // Try different patterns to extract the song/artist request
+            if (userInput.includes("play ")) {
+              const afterPlay = userInput.split("play ")[1];
+              if (afterPlay) {
+                // Remove common suffixes like "song", "video", "music"
+                searchQuery = afterPlay
+                  .replace(/\s+(song|video|music|audio)\s*$/i, "")
+                  .replace(/\s+by\s+/i, " ")
+                  .trim();
+              }
+            }
+            
+            if (!searchQuery) {
+              responseMessage = "Please tell me what song you'd like to play. For example: 'Play Arijit Singh song' or 'Play No love song by Subh'";
+            } else {
+              // Search YouTube for the song
+              const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=3&q=${encodeURIComponent(searchQuery + " song")}&type=video&videoCategoryId=10&key=${YOUTUBE_API_KEY}`;
+              const response = await fetch(searchUrl);
+              const data = await response.json();
+              
+              if (response.ok && data.items && data.items.length > 0) {
+                const videos = data.items.map((item: any) => ({
+                  videoId: item.id.videoId,
+                  title: item.snippet.title,
+                  description: item.snippet.description,
+                  thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url,
+                  channelTitle: item.snippet.channelTitle,
+                  publishedAt: item.snippet.publishedAt
+                }));
+                
+                responseMessage = `Found music for "${searchQuery}". Here are your options:`;
+                
+                // Create a YouTube task to display the videos
+                task = await storage.createTask({
+                  userId,
+                  type: "youtube",
+                  status: "display",
+                  data: {
+                    id: `youtube-${randomUUID()}`,
+                    type: "youtube",
+                    status: "display",
+                    searchQuery,
+                    videos,
+                    selectedVideo: videos[0] // Auto-select first video
+                  }
+                });
+              } else {
+                responseMessage = `I couldn't find any music for "${searchQuery}". Please try a different search.`;
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching YouTube videos:", error);
+          responseMessage = "I'm having trouble searching for music right now. Please try again later.";
+        }
+      }
       // News related (check this first to avoid conflicts)
-      if (userInput.includes("news") || userInput.includes("headlines") || userInput.includes("breaking") ||
+      else if (userInput.includes("news") || userInput.includes("headlines") || userInput.includes("breaking") ||
           userInput.includes("current events") || userInput.includes("today's news")) {
         
         try {

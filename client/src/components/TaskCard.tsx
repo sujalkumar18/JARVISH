@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useAIAssistant, FoodOrderTask, TicketTask, NewsTask, DictionaryTask, WeatherTask, CurrencyTask, EntertainmentTask, WikipediaTask, TrainTask } from "@/context/AIAssistantContext";
+import { useAIAssistant, FoodOrderTask, TicketTask, NewsTask, DictionaryTask, WeatherTask, CurrencyTask, EntertainmentTask, WikipediaTask, TrainTask, YouTubeTask } from "@/context/AIAssistantContext";
 import { Check, Utensils, Ticket, Clock, MapPin, Star, Zap, AlertCircle, Train, ArrowRight, CreditCard } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import NewsCard from "./NewsCard";
@@ -8,9 +8,10 @@ import { WeatherCard } from "./WeatherCard";
 import { CurrencyCard } from "./CurrencyCard";
 import { EntertainmentCard } from "./EntertainmentCard";
 import { WikipediaCard } from "./WikipediaCard";
+import { YouTubeCard } from "./YouTubeCard";
 
 interface TaskCardProps {
-  task: FoodOrderTask | TicketTask | NewsTask | DictionaryTask | WeatherTask | CurrencyTask | EntertainmentTask | WikipediaTask | TrainTask;
+  task: FoodOrderTask | TicketTask | NewsTask | DictionaryTask | WeatherTask | CurrencyTask | EntertainmentTask | WikipediaTask | TrainTask | YouTubeTask;
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
@@ -541,6 +542,14 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
           )}
         </div>
       </div>
+    );
+  } else if (task.type === "youtube") {
+    return (
+      <YouTubeCard 
+        searchQuery={task.searchQuery}
+        videos={task.videos}
+        selectedVideo={task.selectedVideo}
+      />
     );
   } else if (task.type === "news") {
     return (
