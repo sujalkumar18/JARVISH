@@ -337,8 +337,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let task = null;
       let transaction = null;
       
-      // YouTube Music requests (check this first to catch music-related requests)
-      if (userInput.includes("play") && (userInput.includes("song") || userInput.includes("music") || 
+      // YouTube monetization questions (check this first)
+      if ((userInput.includes("youtube") && (userInput.includes("earn") || userInput.includes("money") || 
+          userInput.includes("monetize") || userInput.includes("income") || userInput.includes("revenue") ||
+          userInput.includes("monetization") || userInput.includes("profit") || userInput.includes("paise") ||
+          userInput.includes("kamana") || userInput.includes("kamai"))) ||
+          (userInput.includes("how to") && userInput.includes("youtube") && 
+           (userInput.includes("money") || userInput.includes("earn") || userInput.includes("paise")))) {
+        
+        responseMessage = `YouTube से पैसे कमाने के मुख्य तरीके:
+
+1. **Ad Revenue (AdSense)**: 1,000 subscribers और 4,000 watch hours पूरे करने के बाद monetization enable करें।
+
+2. **Channel Memberships**: Subscribers को paid membership offer करें।
+
+3. **Super Chat**: Live streams में viewers से donations receive करें।
+
+4. **Sponsored Content**: Brands के साथ collaboration करें।
+
+5. **Affiliate Marketing**: Products promote करके commission earn करें।
+
+6. **Merchandise**: अपना products sell करें।
+
+7. **Course/Coaching**: अपनी skills के लिए paid courses बनाएं।
+
+**Tips for Success:**
+- Regular, quality content upload करें
+- SEO optimize titles और descriptions use करें  
+- Audience engagement बढ़ाएं
+- Thumbnail attractive रखें
+- Consistent posting schedule maintain करें
+
+शुरुआत करने के लिए सबसे पहले quality content बनाना focus करें!`;
+      }
+      // YouTube Music requests (check this second for music-related requests)
+      else if (userInput.includes("play") && (userInput.includes("song") || userInput.includes("music") || 
           userInput.includes("video") || userInput.includes("youtube") || 
           userInput.includes("arijit") || userInput.includes("subh") || userInput.includes("audio"))) {
         

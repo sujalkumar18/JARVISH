@@ -21,16 +21,15 @@ const ConversationArea: React.FC = () => {
       // Get the most recent task
       const latestTask = tasks[tasks.length - 1];
       
-      // For YouTube tasks, only show if this specific message created the YouTube task
-      // (check if the message mentions music/play/youtube and the latest task is youtube)
+      // For YouTube tasks, only show if this specific message is about music playback
+      // (check if the message specifically mentions finding/playing music, not general YouTube topics)
       if (latestTask.type === "youtube") {
         const messageContent = message.content.toLowerCase();
-        const isYouTubeRelatedMessage = messageContent.includes('music') || 
-                                       messageContent.includes('song') || 
-                                       messageContent.includes('youtube') ||
-                                       messageContent.includes('found music') ||
-                                       messageContent.includes('play');
-        if (isYouTubeRelatedMessage) {
+        const isMusicPlaybackMessage = messageContent.includes('found music') || 
+                                       messageContent.includes('here are your options') ||
+                                       (messageContent.includes('music') && messageContent.includes('for')) ||
+                                       (messageContent.includes('song') && messageContent.includes('options'));
+        if (isMusicPlaybackMessage) {
           return [latestTask];
         }
         return [];
