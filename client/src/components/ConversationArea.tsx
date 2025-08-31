@@ -18,8 +18,26 @@ const ConversationArea: React.FC = () => {
     const isLastMessage = messageIndex === messages.length - 1;
     
     if (message.type === "assistant" && isLastMessage && tasks.length > 0) {
-      // Return the most recent task only for the very last assistant message
-      return tasks.slice(-1);
+      // Get the most recent task
+      const latestTask = tasks[tasks.length - 1];
+      
+      // For YouTube tasks, only show if this specific message created the YouTube task
+      // (check if the message mentions music/play/youtube and the latest task is youtube)
+      if (latestTask.type === "youtube") {
+        const messageContent = message.content.toLowerCase();
+        const isYouTubeRelatedMessage = messageContent.includes('music') || 
+                                       messageContent.includes('song') || 
+                                       messageContent.includes('youtube') ||
+                                       messageContent.includes('found music') ||
+                                       messageContent.includes('play');
+        if (isYouTubeRelatedMessage) {
+          return [latestTask];
+        }
+        return [];
+      }
+      
+      // For other tasks, show the latest task normally
+      return [latestTask];
     }
     return [];
   };
