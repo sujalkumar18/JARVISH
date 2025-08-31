@@ -284,28 +284,55 @@ export function AIAssistantProvider({ children }: { children: ReactNode }) {
     setIsTyping(true);
     
     try {
-      // Process message with backend API
-      const response = await apiRequest("POST", "/api/assistant/message", {
-        message: content
-      });
+      // Check if this is a task-specific command (food, ticket, etc.) or general AI chat
+      const lowerContent = content.toLowerCase();
+      const isTaskCommand = lowerContent.includes('order') || lowerContent.includes('book') || 
+                           lowerContent.includes('ticket') || lowerContent.includes('train') ||
+                           lowerContent.includes('food') || lowerContent.includes('pizza') ||
+                           lowerContent.includes('news') || lowerContent.includes('dictionary') ||
+                           lowerContent.includes('weather') || lowerContent.includes('currency') ||
+                           lowerContent.includes('joke') || lowerContent.includes('quote') ||
+                           lowerContent.includes('wikipedia') || lowerContent.includes('youtube');
       
-      const data = await response.json();
+      let response: Response;
+      let data: any;
       
-      // Add AI response
-      addMessage(data.message, "assistant");
-      
-      // Add task if returned
-      if (data.task) {
-        setTasks(prev => [...prev, data.task]);
-      }
-      
-      // Update wallet if transaction occurred (use backend balance directly)
-      if (data.transaction && data.wallet) {
-        setWallet(prev => ({
-          ...prev,
-          balance: data.wallet.balance,
-          transactions: data.wallet.transactions
-        }));
+      if (isTaskCommand) {
+        // Use the existing assistant API for task-specific commands
+        response = await apiRequest("POST", "/api/assistant/message", {
+          message: content
+        });
+        data = await response.json();
+        
+        // Add AI response
+        addMessage(data.message, "assistant");
+        
+        // Add task if returned
+        if (data.task) {
+          setTasks(prev => [...prev, data.task]);
+        }
+        
+        // Update wallet if transaction occurred
+        if (data.transaction && data.wallet) {
+          setWallet(prev => ({
+            ...prev,
+            balance: data.wallet.balance,
+            transactions: data.wallet.transactions
+          }));
+        }
+      } else {
+        // Use the new AI chat API for general conversation
+        response = await apiRequest("POST", "/api/chat/ai", {
+          message: content
+        });
+        data = await response.json();
+        
+        // Add AI response
+        if (data.success) {
+          addMessage(data.response, "assistant");
+        } else {
+          addMessage(data.message || "Sorry, I couldn't process your request.", "assistant");
+        }
       }
     } catch (error) {
       console.error("Error processing message:", error);

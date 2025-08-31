@@ -6,6 +6,7 @@ import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import session from "express-session";
 import { signupSchema, loginSchema } from "@shared/schema";
+import { generateContextualResponse } from "./gemini";
 
 // Extend Express Request interface for session
 declare module "express-session" {
@@ -1809,6 +1810,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error adding funds:", error);
       res.status(500).json({ message: "Failed to add funds" });
+    }
+  });
+
+  // ==== AI Chat API ====
+  
+  // AI Chat endpoint
+  app.post(`${apiRouter}/chat/ai`, async (req: Request, res: Response) => {
+    try {
+      const chatSchema = z.object({
+        message: z.string().min(1, "Message cannot be empty")
+      });
+      
+      const validated = chatSchema.parse(req.body);
+      const userId = getCurrentUserId(req);
+      
+      // Save user message to database
+      await storage.createMessage({
+        userId,
+        content: validated.message,
+        type: "user"
+      });
+      
+      // Generate AI response using Gemini
+      const aiResponse = await generateContextualResponse(validated.message);
+      
+      // Save AI response to database
+      await storage.createMessage({
+        userId,
+        content: aiResponse,
+        type: "assistant"
+      });
+      
+      // Get recent messages for context
+      const messages = await storage.getMessages(userId, 10);
+      
+      res.json({
+        success: true,
+        response: aiResponse,
+        messages: messages.reverse() // Latest first
+      });
+    } catch (error) {
+      console.error("Error in AI chat:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "मुझे खुशी होगी आपकी मदद करने में। कृपया अपना सवाल दोबारा पूछें।" 
+      });
     }
   });
 
