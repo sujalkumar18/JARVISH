@@ -292,7 +292,10 @@ export function AIAssistantProvider({ children }: { children: ReactNode }) {
                            lowerContent.includes('news') || lowerContent.includes('dictionary') ||
                            lowerContent.includes('weather') || lowerContent.includes('currency') ||
                            lowerContent.includes('joke') || lowerContent.includes('quote') ||
-                           lowerContent.includes('wikipedia') || lowerContent.includes('youtube');
+                           lowerContent.includes('wikipedia') || lowerContent.includes('youtube') ||
+                           (lowerContent.includes('play') && (lowerContent.includes('song') || 
+                            lowerContent.includes('music') || lowerContent.includes('arijit') || 
+                            lowerContent.includes('audio') || lowerContent.includes('video')));
       
       let response: Response;
       let data: any;
