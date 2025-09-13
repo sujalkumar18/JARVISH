@@ -15,20 +15,58 @@ export interface Message {
 export interface FoodOrderTask {
   id: string;
   type: "food";
-  status: "pending" | "confirmed" | "cancelled" | "delivered";
-  restaurant: string;
-  items: {
+  status: "select" | "pending" | "confirmed" | "cancelled" | "delivered";
+  // Legacy single restaurant format
+  restaurant?: string;
+  items?: {
     name: string;
     quantity: number;
     price: number;
   }[];
-  deliveryFee: number;
-  total: number;
-  image: string;
-  rating: number;
-  deliveryTime: string;
-  distance: string;
+  deliveryFee?: number;
+  total?: number;
+  image?: string;
+  rating?: number;
+  deliveryTime?: string;
+  distance?: string;
   orderNumber?: string;
+  // New multiple restaurant format
+  foodType?: string;
+  searchKeyword?: string;
+  options?: {
+    id: string;
+    platform: string;
+    platformColor: string;
+    restaurant: string;
+    items: {
+      name: string;
+      quantity: number;
+      price: number;
+    }[];
+    deliveryFee: number;
+    total: number;
+    image: string;
+    rating: number;
+    deliveryTime: string;
+    distance: string;
+  }[];
+  selectedOption?: {
+    id: string;
+    platform: string;
+    platformColor: string;
+    restaurant: string;
+    items: {
+      name: string;
+      quantity: number;
+      price: number;
+    }[];
+    deliveryFee: number;
+    total: number;
+    image: string;
+    rating: number;
+    deliveryTime: string;
+    distance: string;
+  };
 }
 
 export interface TicketTask {

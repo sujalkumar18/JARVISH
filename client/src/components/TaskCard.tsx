@@ -204,6 +204,12 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   }
   
   if (task.type === "food") {
+    const [selectedOption, setSelectedOption] = useState(task.selectedOption || (task.options && task.options[0]) || task);
+    
+    // Handle multiple options (new format) vs single option (legacy format)
+    const isMultipleOptions = task.options && Array.isArray(task.options);
+    const currentFood = isMultipleOptions ? selectedOption : task;
+    
     return (
       <div className="glass-card rounded-2xl shadow-xl overflow-hidden border border-white/20 hover:shadow-2xl transition-all duration-300 animate-slide-up">
         <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-b border-white/20 flex justify-between items-center">
@@ -211,50 +217,124 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
             <div className="p-2 bg-orange-500 rounded-xl shadow-lg">
               <Utensils className="text-white h-5 w-5" />
             </div>
-            <h3 className="font-semibold text-gray-800 dark:text-white text-lg">Food Order</h3>
+            <h3 className="font-semibold text-gray-800 dark:text-white text-lg">
+              {isMultipleOptions ? `${task.searchKeyword ? task.searchKeyword.charAt(0).toUpperCase() + task.searchKeyword.slice(1) : 'Food'} Options` : 'Food Order'}
+            </h3>
           </div>
           <span className={`text-xs font-medium py-2 px-3 rounded-xl shadow-sm ${
-            task.status === "pending" 
-              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-300 ring-1 ring-yellow-300"
-              : task.status === "confirmed" || task.status === "delivered"
-                ? "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-300 ring-1 ring-green-300"
-                : "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-300 ring-1 ring-red-300"
+            task.status === "select" 
+              ? "bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-300 ring-1 ring-blue-300"
+              : task.status === "pending" 
+                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-300 ring-1 ring-yellow-300"
+                : task.status === "confirmed" || task.status === "delivered"
+                  ? "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-300 ring-1 ring-green-300"
+                  : "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-300 ring-1 ring-red-300"
           }`}>
-            {task.status === "pending" ? "🕐 Pending" : 
+            {task.status === "select" ? "🍽️ Choose Option" :
+             task.status === "pending" ? "🕐 Pending" : 
              task.status === "confirmed" ? "✅ Confirmed" :
              task.status === "delivered" ? "🚚 Delivered" : "❌ Cancelled"}
           </span>
         </div>
         
         <div className="p-4">
-          {task.image && (
+          {/* Multiple Restaurant Options */}
+          {isMultipleOptions && task.status === "select" && task.options && (
+            <div className="space-y-3 mb-4">
+              <h4 className="font-medium text-gray-700 dark:text-gray-300 text-sm">Available on these platforms:</h4>
+              <div className="space-y-2">
+                {task.options.map((option: any, index: number) => (
+                  <div 
+                    key={option.id || index}
+                    onClick={() => setSelectedOption(option)}
+                    className={`p-3 rounded-xl cursor-pointer transition-all duration-200 border-2 ${
+                      selectedOption?.id === option.id 
+                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-md' 
+                        : 'border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-600'
+                    }`}
+                    data-testid={`food-option-${option.platform.toLowerCase().replace(' ', '-')}`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <div 
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: option.platformColor }}
+                          ></div>
+                          <span className="font-medium text-sm" style={{ color: option.platformColor }}>
+                            {option.platform}
+                          </span>
+                          <span className="text-gray-600 dark:text-gray-400">•</span>
+                          <span className="font-semibold text-gray-900 dark:text-white text-sm">{option.restaurant}</span>
+                        </div>
+                        <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          <Star className="text-yellow-400 h-3 w-3 mr-1" fill="currentColor" />
+                          <span>{option.rating}</span>
+                          <span className="mx-1">•</span>
+                          <span>{option.deliveryTime}</span>
+                          <span className="mx-1">•</span>
+                          <span>{option.distance}</span>
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">{option.items[0]?.name}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-gray-900 dark:text-white text-sm">${option.total?.toFixed(2)}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">inc. delivery</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Selected Option Details */}
+          {currentFood.image && (
             <img 
-              src={task.image} 
-              alt={`${task.restaurant} food`} 
+              src={currentFood.image} 
+              alt={`${currentFood.restaurant} food`} 
               className="w-full h-32 object-cover rounded-xl mb-3 shadow-md ring-1 ring-gray-200 dark:ring-gray-700"
             />
           )}
           
           <div className="flex justify-between items-start mb-3">
             <div>
-              <h4 className="font-bold text-gray-900 dark:text-white">{task.restaurant}</h4>
+              <div className="flex items-center space-x-2 mb-1">
+                {isMultipleOptions && 'platform' in currentFood && currentFood.platform && (
+                  <>
+                    <div 
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: 'platformColor' in currentFood ? currentFood.platformColor : '#FF6B6B' }}
+                    ></div>
+                    <span className="text-sm font-medium" style={{ color: 'platformColor' in currentFood ? currentFood.platformColor : '#FF6B6B' }}>
+                      {currentFood.platform}
+                    </span>
+                    <span className="text-gray-400">•</span>
+                  </>
+                )}
+                <h4 className="font-bold text-gray-900 dark:text-white">{currentFood.restaurant}</h4>
+              </div>
               <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                 <Star className="text-yellow-400 h-3 w-3 mr-1" fill="currentColor" />
-                <span>{task.rating}</span>
+                <span>{currentFood.rating}</span>
                 <span className="mx-1">•</span>
-                <span>{task.deliveryTime}</span>
+                <span>{currentFood.deliveryTime}</span>
                 <span className="mx-1">•</span>
-                <span>{task.distance}</span>
+                <span>{currentFood.distance}</span>
               </div>
             </div>
             <div className="text-right">
-              <p className="font-bold text-gray-900 dark:text-white">${task.total - task.deliveryFee}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Delivery: ${task.deliveryFee}</p>
+              <p className="font-bold text-gray-900 dark:text-white">
+                ${currentFood.total && currentFood.deliveryFee ? (currentFood.total - currentFood.deliveryFee).toFixed(2) : currentFood.total?.toFixed(2) || '0.00'}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {currentFood.deliveryFee ? `Delivery: $${currentFood.deliveryFee.toFixed(2)}` : ''}
+              </p>
             </div>
           </div>
           
           <div className="border-t border-b border-gray-200 dark:border-gray-700 py-3 my-2">
-            {task.items.map((item, index) => (
+            {(currentFood.items || []).map((item, index) => (
               <div key={index} className="flex justify-between">
                 <span className="text-gray-700 dark:text-gray-300">
                   {item.quantity} × {item.name}
@@ -269,17 +349,17 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
           {/* Balance information */}
           <div className="flex justify-between items-center mt-3 mb-1">
             <span className="text-sm text-gray-600 dark:text-gray-400">Total amount:</span>
-            <span className="font-medium text-gray-900 dark:text-white">${task.total.toFixed(2)}</span>
+            <span className="font-medium text-gray-900 dark:text-white">${(currentFood.total || 0).toFixed(2)}</span>
           </div>
           
           <div className="flex justify-between items-center mb-3">
             <span className="text-sm text-gray-600 dark:text-gray-400">Wallet balance:</span>
-            <span className={`font-medium ${wallet.balance < task.total ? "text-red-500" : "text-green-500"}`}>
+            <span className={`font-medium ${wallet.balance < (currentFood.total || 0) ? "text-red-500" : "text-green-500"}`}>
               ${wallet.balance.toFixed(2)}
             </span>
           </div>
           
-          {wallet.balance < task.total && settings.autoPayment && (
+          {wallet.balance < (currentFood.total || 0) && settings.autoPayment && (
             <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 p-2 rounded-lg text-sm mb-3 flex items-center">
               <Zap className="h-4 w-4 mr-2 text-blue-500" />
               Auto top-up will be applied to complete this payment
@@ -337,7 +417,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                 </div>
                 <div className="bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center">
                   <Check className="mr-1 h-3 w-3" />
-                  <span>Paid ${task.total.toFixed(2)}</span>
+                  <span>Paid ${(currentFood.total || 0).toFixed(2)}</span>
                 </div>
               </div>
               

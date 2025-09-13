@@ -49,6 +49,196 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return Math.floor(1000000000 + Math.random() * 9000000000).toString();
   }
 
+  // Helper function to generate multiple food options from different platforms
+  function generateFoodOptions(foodType: string) {
+    const platforms = ["Zomato", "Swiggy", "Uber Eats", "DoorDash"];
+    
+    const foodDatabase = {
+      pizza: [
+        {
+          platform: "Zomato",
+          restaurant: "Pizza Hut",
+          items: [{ name: "Margherita Pizza (Large)", quantity: 1, price: 24.99 }],
+          deliveryFee: 3.99,
+          image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+          rating: 4.6,
+          deliveryTime: "30-40 min",
+          distance: "2.1 km"
+        },
+        {
+          platform: "Swiggy", 
+          restaurant: "Domino's Pizza",
+          items: [{ name: "Pepperoni Pizza (Medium)", quantity: 1, price: 19.99 }],
+          deliveryFee: 2.99,
+          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+          rating: 4.4,
+          deliveryTime: "25-35 min", 
+          distance: "1.8 km"
+        },
+        {
+          platform: "Uber Eats",
+          restaurant: "Papa John's",
+          items: [{ name: "BBQ Chicken Pizza (Large)", quantity: 1, price: 26.99 }],
+          deliveryFee: 4.49,
+          image: "https://images.unsplash.com/photo-1520201163981-8cc95007dd2a?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+          rating: 4.5,
+          deliveryTime: "35-45 min",
+          distance: "3.2 km"
+        }
+      ],
+      burger: [
+        {
+          platform: "Zomato",
+          restaurant: "McDonald's",
+          items: [{ name: "Big Mac Combo", quantity: 1, price: 12.99 }],
+          deliveryFee: 2.49,
+          image: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+          rating: 4.3,
+          deliveryTime: "15-25 min",
+          distance: "1.2 km"
+        },
+        {
+          platform: "Swiggy",
+          restaurant: "Burger King", 
+          items: [{ name: "Whopper Meal", quantity: 1, price: 14.99 }],
+          deliveryFee: 2.99,
+          image: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+          rating: 4.2,
+          deliveryTime: "20-30 min",
+          distance: "2.5 km"
+        },
+        {
+          platform: "Uber Eats",
+          restaurant: "Five Guys",
+          items: [{ name: "Cheeseburger Deluxe", quantity: 1, price: 16.99 }],
+          deliveryFee: 3.49,
+          image: "https://images.unsplash.com/photo-1553979459-d2229ba7433a?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+          rating: 4.7,
+          deliveryTime: "25-35 min", 
+          distance: "2.8 km"
+        }
+      ],
+      biryani: [
+        {
+          platform: "Zomato",
+          restaurant: "Paradise Biryani",
+          items: [{ name: "Hyderabadi Chicken Biryani", quantity: 1, price: 18.99 }],
+          deliveryFee: 3.99,
+          image: "https://images.unsplash.com/photo-1563379091339-03246963d96c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+          rating: 4.8,
+          deliveryTime: "40-50 min",
+          distance: "3.1 km"
+        },
+        {
+          platform: "Swiggy",
+          restaurant: "Biryani Blues",
+          items: [{ name: "Mutton Biryani (Full)", quantity: 1, price: 22.99 }],
+          deliveryFee: 2.99,
+          image: "https://images.unsplash.com/photo-1601050690597-df0568f70950?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+          rating: 4.6,
+          deliveryTime: "45-55 min",
+          distance: "2.7 km"
+        },
+        {
+          platform: "Uber Eats", 
+          restaurant: "Behrouz Biryani",
+          items: [{ name: "Royal Chicken Biryani", quantity: 1, price: 19.99 }],
+          deliveryFee: 4.99,
+          image: "https://images.unsplash.com/photo-1642821373181-696a54913e93?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+          rating: 4.7,
+          deliveryTime: "35-45 min",
+          distance: "4.2 km"
+        }
+      ],
+      pasta: [
+        {
+          platform: "Zomato",
+          restaurant: "Olive Garden",
+          items: [{ name: "Chicken Alfredo Pasta", quantity: 1, price: 16.99 }],
+          deliveryFee: 3.49,
+          image: "https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+          rating: 4.4,
+          deliveryTime: "30-40 min",
+          distance: "2.3 km"
+        },
+        {
+          platform: "Swiggy",
+          restaurant: "Pasta Street",
+          items: [{ name: "Penne Arrabbiata", quantity: 1, price: 14.99 }],
+          deliveryFee: 2.99,
+          image: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+          rating: 4.3,
+          deliveryTime: "25-35 min", 
+          distance: "1.9 km"
+        }
+      ],
+      chinese: [
+        {
+          platform: "Zomato",
+          restaurant: "Panda Express",
+          items: [{ name: "Orange Chicken Bowl", quantity: 1, price: 13.99 }],
+          deliveryFee: 2.99,
+          image: "https://images.unsplash.com/photo-1525755662778-989d0524087e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+          rating: 4.2,
+          deliveryTime: "20-30 min",
+          distance: "2.1 km"
+        },
+        {
+          platform: "Swiggy",
+          restaurant: "Mainland China",
+          items: [{ name: "Hakka Noodles with Chili Chicken", quantity: 1, price: 17.99 }],
+          deliveryFee: 3.99,
+          image: "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+          rating: 4.5,
+          deliveryTime: "30-40 min",
+          distance: "2.8 km"
+        }
+      ],
+      "south indian": [
+        {
+          platform: "Zomato",
+          restaurant: "Saravana Bhavan",
+          items: [{ name: "Masala Dosa with Sambar & Chutney", quantity: 1, price: 11.99 }],
+          deliveryFee: 2.49,
+          image: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+          rating: 4.6,
+          deliveryTime: "25-35 min",
+          distance: "1.7 km"
+        },
+        {
+          platform: "Swiggy",
+          restaurant: "MTR Foods",
+          items: [{ name: "Idli Vada Combo", quantity: 1, price: 9.99 }],
+          deliveryFee: 1.99,
+          image: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
+          rating: 4.7,
+          deliveryTime: "20-30 min",
+          distance: "1.4 km"
+        }
+      ]
+    };
+    
+    // Mixed food options from different categories
+    const mixedOptions = [
+      ...foodDatabase.pizza.slice(0, 1),
+      ...foodDatabase.burger.slice(0, 1), 
+      ...foodDatabase.biryani.slice(0, 1),
+      ...foodDatabase.pasta.slice(0, 1)
+    ];
+    
+    const options = foodDatabase[foodType as keyof typeof foodDatabase] || mixedOptions;
+    
+    // Calculate totals and add platform info
+    return options.map((option, index) => ({
+      ...option,
+      total: option.items.reduce((sum, item) => sum + item.price, 0) + option.deliveryFee,
+      id: `${option.platform.toLowerCase()}-${index}`,
+      platformColor: option.platform === "Zomato" ? "#FF6B6B" :
+                   option.platform === "Swiggy" ? "#FC8019" :  
+                   option.platform === "Uber Eats" ? "#00B74F" : "#FF4444"
+    }));
+  }
+
   // Helper function to generate realistic train options
   function generateTrainOptions(fromCity: string, toCity: string, date: string, classType: string) {
     // Indian trains database
@@ -900,35 +1090,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         });
       }
-      // Create food order task
+      // Create food order task with multiple options
       else if (userInput.includes("hungry") || userInput.includes("food") || userInput.includes("pizza") || 
+          userInput.includes("burger") || userInput.includes("biryani") || userInput.includes("pasta") ||
           userInput.includes("order") || userInput.includes("restaurant")) {
         
-        responseMessage = "I can help you order a pepperoni pizza. Let me find some options nearby.";
+        // Detect food type from user input
+        let foodType = "mixed";
+        let searchKeyword = "";
         
-        // Create a food order task
+        if (userInput.includes("pizza")) { 
+          foodType = "pizza"; 
+          searchKeyword = "pizza";
+        } else if (userInput.includes("burger")) { 
+          foodType = "burger";
+          searchKeyword = "burger";
+        } else if (userInput.includes("biryani")) { 
+          foodType = "biryani";
+          searchKeyword = "biryani";
+        } else if (userInput.includes("pasta")) { 
+          foodType = "pasta";
+          searchKeyword = "pasta";
+        } else if (userInput.includes("chinese")) { 
+          foodType = "chinese";
+          searchKeyword = "chinese";
+        } else if (userInput.includes("south indian") || userInput.includes("dosa")) { 
+          foodType = "south indian";
+          searchKeyword = "south indian";
+        } else {
+          foodType = "mixed";
+          searchKeyword = "food";
+        }
+        
+        responseMessage = `Great choice! I found multiple ${searchKeyword === "food" ? "food" : searchKeyword} options from popular platforms:`;
+        
+        // Generate multiple restaurant options from different platforms
+        const restaurantOptions = generateFoodOptions(foodType);
+        
+        // Create a food selection task with multiple options
         task = await storage.createTask({
           userId,
           type: "food",
-          status: "pending",
+          status: "select", // Changed to select to show multiple options
           data: {
             id: `food-${randomUUID()}`,
             type: "food",
-            status: "pending",
-            restaurant: "Pizza Express",
-            items: [
-              {
-                name: "Pepperoni Pizza (Medium)",
-                quantity: 1,
-                price: 18.99
-              }
-            ],
-            deliveryFee: 2.99,
-            total: 21.98,
-            image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=250",
-            rating: 4.8,
-            deliveryTime: "25-35 min",
-            distance: "1.2 mi"
+            status: "select",
+            foodType: foodType,
+            searchKeyword: searchKeyword,
+            options: restaurantOptions, // Multiple restaurant options
+            selectedOption: restaurantOptions[0] // Default selection
           }
         });
       }
