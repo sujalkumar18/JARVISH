@@ -350,7 +350,18 @@ export function AIAssistantProvider({ children }: { children: ReactNode }) {
         
         // Add task if returned
         if (data.task) {
-          setTasks(prev => [...prev, data.task]);
+          setTasks(prev => {
+            // Define task types that should replace previous instances
+            const replaceableTypes = ['food', 'ticket', 'train', 'youtube', 'news', 'dictionary', 'weather', 'currency', 'entertainment', 'wikipedia'];
+            
+            if (replaceableTypes.includes(data.task.type)) {
+              // Remove all previous tasks of the same type before adding the new one
+              return [...prev.filter(task => task.type !== data.task.type), data.task];
+            } else {
+              // For other task types, just add to the list
+              return [...prev, data.task];
+            }
+          });
         }
         
         // Update wallet if transaction occurred
