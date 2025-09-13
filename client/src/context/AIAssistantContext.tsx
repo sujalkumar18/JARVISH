@@ -251,6 +251,7 @@ interface AIAssistantContextType {
   handleSendMessage: (content: string) => Promise<void>;
   handleVoiceInput: (transcript: string) => Promise<void>;
   updateWalletBalance: (amount: number) => Promise<void>;
+  updateTaskSelectedOption: (taskId: string, selectedOption: any) => void;
   confirmTask: (taskId: string) => Promise<void>;
   cancelTask: (taskId: string) => Promise<void>;
   updateSettings: (newSettings: Partial<SettingsState>) => void;
@@ -417,6 +418,14 @@ export function AIAssistantProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const updateTaskSelectedOption = useCallback((taskId: string, selectedOption: any) => {
+    setTasks(prev => prev.map(task => 
+      task.id === taskId 
+        ? { ...task, selectedOption }
+        : task
+    ));
+  }, []);
+
   const confirmTask = useCallback(async (taskId: string) => {
     try {
       // Find the task by ID
@@ -426,16 +435,30 @@ export function AIAssistantProvider({ children }: { children: ReactNode }) {
         return;
       }
       
+      // Calculate the actual total (use selectedOption.total for food with multiple options)
+      let actualTotal = task.total;
+      if (task.type === 'food' && 'selectedOption' in task && task.selectedOption?.total) {
+        actualTotal = task.selectedOption.total;
+      }
+      
       // Use the auto top-up feature if enabled (only for tasks with payment)
-      if ((task.type === 'food' || task.type === 'ticket') && settings.autoPayment && wallet.balance < task.total) {
+      if ((task.type === 'food' || task.type === 'ticket') && settings.autoPayment && wallet.balance < actualTotal) {
         // Top-up notification
         addMessage(`Your wallet balance is insufficient. Auto top-up will be applied to complete this payment.`, "assistant");
       }
       
-      const response = await apiRequest("POST", "/api/tasks/confirm", {
+      // Prepare request payload
+      const payload: any = {
         taskId,
         autoTopUp: settings.autoPayment
-      });
+      };
+      
+      // For food tasks with selected options, include the selected option
+      if (task.type === 'food' && 'selectedOption' in task && task.selectedOption) {
+        payload.selectedOption = task.selectedOption;
+      }
+      
+      const response = await apiRequest("POST", "/api/tasks/confirm", payload);
       
       const data = await response.json();
       
@@ -517,6 +540,7 @@ export function AIAssistantProvider({ children }: { children: ReactNode }) {
         handleSendMessage,
         handleVoiceInput,
         updateWalletBalance,
+        updateTaskSelectedOption,
         confirmTask,
         cancelTask,
         updateSettings,

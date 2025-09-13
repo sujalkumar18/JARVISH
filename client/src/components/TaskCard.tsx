@@ -15,7 +15,7 @@ interface TaskCardProps {
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
-  const { confirmTask, cancelTask, wallet, settings } = useAIAssistant();
+  const { confirmTask, cancelTask, wallet, settings, updateTaskSelectedOption } = useAIAssistant();
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   
@@ -246,7 +246,10 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                 {task.options.map((option: any, index: number) => (
                   <div 
                     key={option.id || index}
-                    onClick={() => setSelectedOption(option)}
+                    onClick={() => {
+                      setSelectedOption(option);
+                      updateTaskSelectedOption(task.id, option);
+                    }}
                     className={`p-3 rounded-xl cursor-pointer transition-all duration-200 border-2 ${
                       selectedOption?.id === option.id 
                         ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 shadow-md' 
@@ -373,10 +376,10 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
             </div>
           )}
           
-          {task.status === "pending" && (
+          {(task.status === "pending" || task.status === "select") && (
             <>
               <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-                <p>Would you like to confirm this order?</p>
+                <p>{task.status === "select" ? "Ready to order your selected option?" : "Would you like to confirm this order?"}</p>
               </div>
               
               <div className="flex space-x-3 mt-4">
